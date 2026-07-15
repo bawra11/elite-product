@@ -1,0 +1,7 @@
+[submodule "elite-app"]
+	path = elite-app
+	url = git@github.com:explorexinc/elite-app.git
+	branch = dev
+[submodule "elite"]
+	path = elite
+	url = https://github.com/explorexinc/elite.git
