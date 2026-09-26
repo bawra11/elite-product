@@ -5,7 +5,6 @@ Cross-cutting technical context that isn't specific to any one codebase folder.
 - [`api-reference.md`](./api-reference.md) — stage BE curl reference (endpoints, auth, gotchas).
 - [`domain-model.md`](./domain-model.md) — entity definitions the Flutter domain layer should mirror. Experience and curation are confirmed; happening (restaurant story) still has no sample payload.
 - [`architecture.md`](./architecture.md) — stack choices and layering for the Flutter codebase.
-- [`doc-audit.md`](./doc-audit.md) — 2026-09-26 documentation audit (code branches were not reachable).
 - [`../codebase/BE/README.md`](../codebase/BE/README.md) — backend repos (customer_gateway, feed_svc, restaurant_catalog_svc, protos, protos_dart): how they fit together.
 
 Keep this folder as the place BE contract changes land first — update `api-reference.md`
