@@ -2,6 +2,18 @@
 
 Date: 2026-09-26. Method: Graphify index of the product docs (38 files, 1,062 nodes, 1,791 edges, 60 communities) plus a direct read of the files the graph flagged. `graphify-out/` is local and gitignored. Query with `~/.local/bin/graphify query "…"`.
 
+## Resolved 2026-09-26
+
+Founder direction, written into the product brief, domain model, architecture note, and API reference:
+
+1. Experience and curation are both BE post types on `feed_posts`.
+2. Auth is always a phone number and OTP. No password.
+3. phase01's endpoint set is the union of §1–21 and dine-in `main` @ `b971951`. `explorexinc/elite` still 404s here, so `main` and `phase01` were not diffed in code and the app tree was not changed.
+4. A restaurant story is the product name for the BE type happening.
+5. Delete and edit are shown only to the author. The service still does not check authorship on delete.
+
+The sections below are the original audit. Items 1, 2, 4, 5, and 6 in "docs disagree" are superseded by the resolutions above.
+
 ## Branch map requested
 
 | Tree | Branch |

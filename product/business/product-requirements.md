@@ -22,15 +22,17 @@ All three live in a unified content system referred to as **posts** (see `feed_p
 - **Verified experience**: when tagged to a real-world visit + bill/order number (`visit_id`, `order_id` populated, `verified: true`). Verified experiences carry extra structured tagging — dish items ordered, order details — because they're backed by a real transaction, not just a claim.
 - Unverified experiences omit `visit_id`/`order_id` and `verified: false` — still valid content, just without transaction-backed proof or dish-level detail.
 
-### 2. Curation (not yet in the sampled API, but confirmed in scope)
+### 2. Curation (`FEED_POST_TYPE_CURATION`)
 - A user-created **list of restaurants** with: caption (required), cover image (optional), body text (optional).
 - **Brand curation**: same shape, but authored by a brand/restaurant account instead of a user. Brand curations are **promoted** content (paid/boosted placement in feed).
+- Same `feed_posts` endpoints as an experience. Create body is in `tech/common/api-reference.md` §7. The title is the post's root `title`, not a field inside `payload.curation`.
 
-### 3. Restaurant story (not yet in the sampled API, but confirmed in scope)
+### 3. Restaurant story (BE name: happening)
 - Restaurant-authored post. Can include: photos, dish tags, offers, other restaurant actions/tags, and a text body.
 - Functionally closer to an Instagram "post"/story from the business account.
+- Product says **restaurant story**. feed_svc says **happening** (create rule: `ends_at` ≥ `starts_at`). They are the same post type, on the same `feed_posts` endpoints. No captured request body yet — see `tech/common/domain-model.md`.
 
-> Tech note: the current stage API only exposes `feed_posts` with `post_type: FEED_POST_TYPE_EXPERIENCE`. Curation and restaurant-story endpoints are not yet documented in the curl reference — treat their data contracts as **unconfirmed/to-be-specified** until BE ships them. See `tech/common/domain-model.md`.
+> Tech note: experience and curation are both post types on stage. Restaurant stories use the BE type happening. See `tech/common/domain-model.md`.
 
 ## Reactions & social graph
 
@@ -43,7 +45,7 @@ All three live in a unified content system referred to as **posts** (see `feed_p
 Phase boundaries matter: phase 1 is frictionless (no auth), phases 2–3 require the user to opt in.
 
 1. **Who is the user?** — First launch. Ask only for name + username. User is immediately dropped into the Home feed to explore, unauthenticated. No gate.
-2. **User's credentials** — Actual sign-in (phone/OTP verification + password setting) is *user-initiated*, triggered whenever the user tries to take an action that needs an identity (react, follow, post, etc.), not forced up front.
+2. **User's credentials** — Sign-in is phone number and OTP only. No password, no email. It is *user-initiated*, triggered whenever the user tries to take an action that needs an identity (react, follow, post, etc.), not forced up front.
 3. **Building initial network** — One-time tour shown immediately after first successful verification: show the user's profile, suggested establishments to follow, "create your own community" CTA, and "invite friends." Shown once, not repeated on subsequent logins.
 
 Design implication: the app must support a **guest/anonymous session** that can browse the public feed (see `v1/public/feed_posts`, which needs only `X-API-TOKEN`, no user JWT) and a **soft upgrade path** into phases 2–3 triggered contextually.
@@ -76,7 +78,7 @@ Design implication: the app must support a **guest/anonymous session** that can 
 
 ## Open questions / not yet specified by BE
 
-- Curation and restaurant-story API contracts (endpoints, request/response shape).
+- Happening (restaurant story) request body. The type is confirmed; a captured payload is not.
 - "Analysis" tab content on profile — which metrics.
 - Push notification strategy.
 - Exact anonymous→authenticated session handoff (merging guest feed state into authenticated state).
@@ -90,3 +92,6 @@ Track these in `tech/common/domain-model.md` under "Unconfirmed" and revisit as 
 - **2026-09-22 · Phase 1 gains a tutorial.** After name + handle, a one-time 4-slide tutorial runs (Experience · Experience DNA · Curation · Discovery) before Home.
 - **2026-09-22 · Experience DNA** (from the design system) is a restaurant-level hexagonal radar of what diners mention: Service, Food and Value always, then Vibe, Presentation and Convenience when mentioned. It appears only past 100 verified experiences, is never a rating, and never appears on an individual experience.
 - **2026-09-22 · Votes.** Both **Helpful** and **Not helpful** are shown on every experience (per the design). "Not helpful" assumes a `FEED_POST_REACTION_UNHELPFUL` wire value, which BE still needs to confirm.
+- **2026-09-26 · Post types.** Experience and curation are both BE post types on `feed_posts`. A restaurant story is the product name for the BE type happening.
+- **2026-09-26 · Auth.** Sign-in is always a phone number and OTP. There is no password step.
+- **2026-09-26 · Delete and edit.** The delete and edit actions are shown only when the signed-in diner is the post's author. feed_svc still does not enforce that on delete; the app must.
