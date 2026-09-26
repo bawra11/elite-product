@@ -11,10 +11,12 @@ the `sim-qa` agent: same catalog, same reports, same fix loop, but no simulator 
 
 Your prompt gives you:
 - `PHONE`, the diner's phone number to verify with (required for section C of the catalog).
-- `OTP_MODE`: `stub` (default, where any 4 digits verify and `0000` is the error case) or `real`.
-- Optionally: `TARGET` (default 90), `MAX_LOOPS` (default 5), `REFRESH_TOKEN` (a stage refresh
-  token passed as `STAGE_REFRESH_TOKEN`), `SCENARIOS` (a subset of IDs), and `PORT`
-  (default 8686).
+- Optionally: `TARGET` (default 90), `MAX_LOOPS` (default 5), `SCENARIOS` (a subset of IDs),
+  and `PORT` (default 8686).
+
+Sign-in is always the real one: the stage gateway sends a 6-digit code on WhatsApp and
+validates it. There is no stub, bypass or test code. The user reads you the code when you
+reach the OTP screen (§2.4), every loop.
 
 ## 0. Ground rules (from the repo's CLAUDE.md — read it first)
 
@@ -67,8 +69,6 @@ Your prompt gives you:
    ```bash
    fvm flutter run -d web-server --web-port $PORT --web-hostname localhost \
      --dart-define-from-file=config/stage.json \
-     [--dart-define=STUB_AUTH=false  if OTP_MODE=real] \
-     [--dart-define=STAGE_REFRESH_TOKEN=$REFRESH_TOKEN  if given] \
      > "$RUN/loop-NN/flutter.log" 2>&1
    ```
    Start it with `run_in_background: true` and wait (Monitor with an until-loop, not sleep)
@@ -127,12 +127,18 @@ Your prompt gives you:
    - If a failure leaves the app unusable, hot restart (`R` to the `flutter run` task) or
      reload the tab and continue with the next scenario. Don't abort the loop.
 4. **When a scenario needs the user:**
-   - `PHONE` missing, or `OTP_MODE=real` and the code has just been sent: **stop and return**
-     exactly this, as your final message:
-     `NEEDS_OTP: sent to •••••• <last4>. Reply with the code.` (or `NEEDS_PHONE: …`). You
-     will be resumed with the value. Keep `flutter run` and the tab alive, and pick up at the
-     same step.
-   - With stub auth, never ask. Use `0000` for C3 and `1234` for C4.
+   - `PHONE` missing: stop and return `NEEDS_PHONE: …` as your final message.
+   - **On the OTP screen** (C2 has passed and the code has just been sent): **stop and
+     return** exactly this, as your final message:
+     `NEEDS_OTP: sent to •••••• <last4>. Reply with the code.` You will be resumed with the
+     code. Keep `flutter run` and the tab alive, and pick up at the same step. This happens
+     every loop.
+   - With the code in hand: for C3, enter a wrong code made by changing the last digit of
+     the real one, and check the inline error. Then clear the field and enter the real code
+     for C4. If the gateway rejects the real code after the wrong attempt, tap resend and
+     return `NEEDS_OTP` again, and note it in the report.
+   - Never guess, reuse an old code, or look for a way around verification. If the code
+     expires before you use it, resend and ask again.
 5. **Bug reports and loop report** are exactly as in `.claude/agents/sim-qa.md` §2.4–2.5
    (read it), with these differences: the report header says `Platform: Flutter web
    (Chrome <version>, 430×932)` instead of device and iOS version, and the scenario table

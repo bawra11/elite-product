@@ -113,11 +113,12 @@ mock until BE ships the real endpoint:
   factor with BE, then centralize the conversion in one place (e.g. `Money` value type),
   never inline the division in a widget.
 
-## Frontend-only entities (demo-backed until BE ships them)
+## Frontend-only entities (empty until BE ships them)
 
 Implemented in `elite_app/lib/domain/entities/discovery.dart` and
-`experience_dna.dart`. They are served by `DemoDiscoveryRepository`, gated by
-`AppConfig.useDemoDiscovery`. Each maps to a future endpoint behind
+`experience_dna.dart`. Every build wires `RemoteDiscoveryRepository` against stage, which
+shows empty states where BE has no endpoint yet. `DemoDiscoveryRepository` is kept only as a
+fake for tests and design captures. Each entity maps to a future endpoint behind
 `DiscoveryRepository`, so screens won't change when the real API lands.
 
 - `RestaurantSummary`: the diner-facing slice of a restaurant (name, area, cuisine, hero/logo, recommended, DNA, amenities, live vibe). **Needed from BE:** a restaurant lookup by id. Feed posts carry only `restaurant_id`.
@@ -129,7 +130,6 @@ Implemented in `elite_app/lib/domain/entities/discovery.dart` and
 **Reaction enum addition:** `ViewerReaction.unhelpful` ↔ `FEED_POST_REACTION_UNHELPFUL`. This is
 inferred from `unhelpful_count` and must be confirmed with BE.
 
-**Auth endpoints still missing:** OTP request/verify and handle availability. The app uses
-`StubOtpAuthRepository`, which is debug-only: it accepts any 4-digit code except `0000`, then
-exchanges `--dart-define=STAGE_REFRESH_TOKEN` for real stage JWTs. Release builds use
-`UnavailableAuthRepository`.
+**Auth:** every build signs in through the dine-in gateway's 6-digit WhatsApp OTP
+(`DineInOtpAuthRepository`). There is no stub, test code or refresh-token bypass. Handle
+availability is still missing from BE.
