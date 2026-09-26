@@ -62,3 +62,32 @@ On `phase01`: mockup Flutter paths, whether the app sends `FEED_POST_REACTION_UN
 On `stage`: author check in `DeleteFeedPostByUUID`, whether search hides soft-deleted posts, and whether happening is the restaurant-story wire type.
 
 On `main`: `protos` vs `protos_dart` commit alignment, and the gateway/catalog `protos_go` versions.
+
+## Follow-up from the parallel reads
+
+These were confirmed after the first pass. `.gitmodules` branch names match the table above. The six gitlink SHAs are not written down anywhere else in the repo. `tech/codebase/elite_app/README.md` and `elite_app/CLAUDE.md` are unreachable until that submodule is checked out.
+
+### Product brief vs the prototype
+
+- Phase 1's body drops the diner straight into Home. The 2026-09-22 decision log, and `auth-name` → `tut-1` in the post-audit HTML, run the four-slide tutorial first.
+- Phase 3 (suggested places to follow, "create your own community", invite friends) has no screen. Post-verify in the mockups is `auth-verified` plus profile completion.
+- Ask Elara is on `home-list` and in the mockup index (`elara/…`). It is not in the product brief.
+- Tab 2 (experience-only feed) and the Create action sheet have no screen ids. Tab 4's `curation-feed` is export-only and marked not built. Profile's Analysis tab and its Experiences / Curations sub-tabs were never exported.
+- The brief lists `FEED_POST_REACTION_INVALID` as a reaction the diner picks. The domain model uses it for an anonymous viewer with no reaction.
+- Tutorial slide 4 teaches Discovery. The tab decision keeps Discovery off the bar.
+- The brief's Home modules (highlights, followed experiences, brand curations, place suggestions, promotions) are not what `home-list` shows (stories rail, Elara, "What's Happening").
+- Labeled Helpful and Not helpful buttons are in the pre-audit export's `experience-detail`. The preferred main file does not contain that screen.
+
+### Design rules on the pre-audit HTML
+
+The union of the three files contains every one of the 43 indexed `data-screen` ids, and no extra ids. The mockup Source column matches that split (`home-list` only in main, `curation-feed` only in the export).
+
+The standalone file still breaks the post-audit rules: eyebrows and "Clear filter" use `#D4AF37`, there are `◆` bullets, and `experience-detail` links a DNA gem. `product/design/README.md` says the main file is about 50 screens; the file has 15 `data-screen` sections. `legacy-pack/DESIGN.md` still opens with "Source of truth for product UI".
+
+### Contract doc nits
+
+- §2 says feed_svc reads a top-level `post_types` filter and that it was not exercised. The "still needs BE" line and the missing-endpoints table still treat that filter as absent.
+- `domain-model.md` points follows at api-reference §8–16 and `users/current` at §17. Follows are §11–16. `users/current` is §20. §17 is Block user.
+- The same file describes `DemoDiscoveryRepository`. The API reference says the app shows empty states, never demo data.
+- The API reference header cites `lib/core/network/api_endpoints.dart`. The "Already on stage" check cites `lib/core/constants/api_endpoints.dart` at `b971951`.
+- A single post (`GET /v1/feed_posts/{uuid}`) requires a JWT, so a shared link has no guest read. The public feed does.
