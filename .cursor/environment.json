@@ -1,0 +1,22 @@
+{
+  "name": "Elite (Flutter app)",
+  "install": "bash .cursor/install.sh",
+  "terminals": [
+    {
+      "name": "flutter-web",
+      "command": "cd tech/codebase/elite_app && export PATH=\"$HOME/fvm/bin:$PATH\" && fvm flutter run -d web-server --web-hostname 0.0.0.0 --web-port 3000",
+      "description": "Serves the Elite Flutter app as web on port 3000 against the stage backend."
+    }
+  ],
+  "ports": [
+    { "name": "flutter-web", "port": 3000 }
+  ],
+  "repositoryDependencies": [
+    "github.com/explorexinc/elite",
+    "github.com/explorexinc/protos_dart",
+    "github.com/explorexinc/protos",
+    "github.com/explorexinc/customer_gateway",
+    "github.com/explorexinc/feed_svc",
+    "github.com/explorexinc/restaurant_catalog_svc"
+  ]
+}
