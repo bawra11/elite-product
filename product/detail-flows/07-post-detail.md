@@ -18,14 +18,12 @@ flowchart TD
   exp --> author{Viewer is the author?}
   cur --> author
   story --> author
-  author -->|Yes| actions["Show delete and edit"]
+  author -->|Yes| actions["Show delete; edit once BE has an update route"]
   author -->|No| hide["Hide delete and edit"]
 
   actions --> confirmDel["Confirm delete"]
   confirmDel --> del["DELETE the post"]
   del -->|Fails| stay["Stay on detail with an error"]
-  actions --> editExp["Experience: existing create flow"]
-  actions --> editCur["Curation: existing edit route"]
 
   exp --> place["place-profile"]
   exp --> dish["dish-detail from a tagged dish"]
@@ -38,4 +36,6 @@ DNA is not drawn on an experience. The pre-audit export still links a DNA gem fr
 
 Not helpful is shown in the product. The wire value is `FEED_POST_REACTION_UNHELPFUL`. `FEED_POST_REACTION_INVALID` means there is no viewer. It is not a third button.
 
-Delete is `DELETE /v1/feed_posts/{uuid}` and is wired for the author. Guests and other diners do not see it. Edit on a curation opens the existing curation editor. Edit on an experience reuses the create-experience flow; there is still no captured `PUT /v1/feed_posts/{uuid}` to persist an in-place edit.
+Delete is `DELETE /v1/feed_posts/{uuid}` and is wired for the author. Guests and other diners do not see it. Edit is hidden for now: there is still no `PUT /v1/feed_posts/{uuid}`, and re-running the create flow would publish a second post. It comes back on experiences and curations once BE ships the update route.
+
+The author sees their own post's votes but can't vote on it, and sees no Follow on their own curation.

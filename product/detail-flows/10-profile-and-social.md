@@ -1,6 +1,6 @@
 # Profile, follow, and block
 
-Profile is the signed-in diner. A guest who opens the tab sees a guest Profile with "Verify my number", which opens `auth-phone` directly. Analysis metrics are not specified yet, so that area is an empty state.
+Profile is the signed-in diner. A guest who opens the tab sees a guest Profile with "Verify my number", which opens `auth-phone` directly. Analysis is computed from the diner's own experiences: the share they called Worth it, how many diners found them helpful, and their most frequent tags. With no experiences it is an empty state.
 
 ```mermaid
 flowchart TD
@@ -12,7 +12,7 @@ flowchart TD
 
   profile --> details["Public, private, and membership fields"]
   profile --> analysis["Analysis"]
-  analysis --> emptyA["Empty until metrics are specified"]
+  analysis --> metrics["Worth it share, helpful count, top tags; empty with no experiences"]
 
   profile --> sub{Sub-tab?}
   sub -->|Experiences| mineExp["This diner's experiences"]
