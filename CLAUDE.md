@@ -8,4 +8,4 @@ This root folder is the product repo `git@github.com:bawra11/elite-product.git`.
 - All other folders are fully writable. `tech/codebase/elite_app` has its own `CLAUDE.md`. Commit there
   first, then stage the new submodule pointer here.
 - **Before any push of this repo, run the `context-sync` skill.** The push hook refuses otherwise.
-- Designed screens and flows: `product/design/mockups/README.md`.
+- Designed screens and flows: `product/design/mockups/README.md`. Frontend flowcharts: `product/detail-flows/`.

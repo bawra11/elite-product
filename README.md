@@ -10,6 +10,7 @@ Elite/
       claude-design/  — Claude Design prototype exports (source of truth)
       mockups/        — screens & flows scope of the prototype, mapped to Flutter files
       legacy-pack/    — pre-Sept 2026 design pack (old app), kept for reference
+    detail-flows/     — frontend flowcharts for the diner app
     business/         — product requirements, feature specs
   tech/
     codebase/         — code, one submodule per repo
@@ -50,5 +51,6 @@ Current focus: active development and testing of the Flutter frontend
 Start here:
 1. [`product/business/product-requirements.md`](product/business/product-requirements.md) — what the app is and does.
 2. [`product/design/mockups/README.md`](product/design/mockups/README.md) — every designed screen and where it's built.
-3. [`tech/common/architecture.md`](tech/common/architecture.md) — how the codebase is structured.
-4. [`tech/codebase/elite_app/README.md`](tech/codebase/elite_app/README.md) — running the app.
+3. [`product/detail-flows/README.md`](product/detail-flows/README.md) — frontend flowcharts for those screens.
+4. [`tech/common/architecture.md`](tech/common/architecture.md) — how the codebase is structured.
+5. [`tech/codebase/elite_app/README.md`](tech/codebase/elite_app/README.md) — running the app.
