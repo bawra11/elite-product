@@ -63,10 +63,10 @@ X-API-TOKEN: <X-API-TOKEN>
 
 - `viewer_reaction` is always `FEED_POST_REACTION_INVALID` here (no viewer identity).
 - The feed mixes post types. `FEED_POST_TYPE_EXPERIENCE` and `FEED_POST_TYPE_CURATION` both
-  come back. A restaurant story is the same feed with the BE type happening (no sample in
-  this capture). feed_svc (stage) reads an optional top-level `post_types` list
-  (`["FEED_POST_TYPE_CURATION"]`) to filter server-side. phase01 should send that field.
-  It was not exercised in the 2026-09-23 capture.
+  come back. A restaurant story is the same feed with `FEED_POST_TYPE_HAPPENING` and a
+  `payload.happening` of `{restaurant_id, starts_at, ends_at}` (no sample in this capture).
+  feed_svc (stage) reads an optional top-level `post_types` list (`["FEED_POST_TYPE_HAPPENING"]`)
+  to filter server-side. phase01 sends it for the Home stories rail and still filters client-side.
 - `next_cursor` is an opaque base64 string. Send it back as the **top-level `cursor`** field,
   beside `page_request` (feed_svc reads `req.GetCursor()`; `PageRequest` has only `page`/`size`).
   An undecodable cursor is a 400 (`feed_svc_6`).

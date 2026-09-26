@@ -4,7 +4,7 @@ Diner sign-in is phone number plus OTP. WhatsApp may deliver that OTP. There is 
 
 The WhatsApp magic link (`PUT /dd/v1/whatsapp/login`) is the dine-in deep link only. It is not a path off the diner phone sheet.
 
-The gate opens only for an action tied to a person: react, follow, post, reserve, pay, and Profile.
+The gate opens only for an action tied to a person: react, follow, post, reserve, and pay. It opens as a sheet over the screen the diner was on, and tapping outside it keeps browsing. Profile is not gated: a guest sees a guest Profile whose "Verify my number" goes straight to `auth-phone`.
 
 ```mermaid
 flowchart TD
