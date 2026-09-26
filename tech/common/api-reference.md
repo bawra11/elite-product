@@ -382,8 +382,9 @@ membership and gallery objects for every `restaurant_memberships` entry.
 A `Restaurant` has ~150 fields, mostly POS concerns (KOT printing, tax templates, payment
 modes, telegram alerts). The diner app reads only `uuid`, `name`, `area`, `city`,
 `description`, `logo_picture_url`, `galleries[]`, `elite_gallery.*`, `details.cuisines` and
-`details.restaurant_tags` (`lib/data/dtos/restaurant_parser.dart`). **This is the only
-restaurant data stage serves today**, so the app's restaurant directory is built from it.
+`details.restaurant_tags` (`lib/data/dtos/restaurant_parser.dart`). The app's restaurant
+directory starts from these membership restaurants and reads any other id from the restaurant
+catalog (`…/restaurant_catalog/restaurants/{id}`, same shape under `response`).
 
 `price` and `discount_percentage` are fixed-point: `discount_percentage: 40000` → 40 % (÷1000).
 The `price` scale is unconfirmed (docs/issues.md M10).
@@ -457,6 +458,11 @@ Auth on phase01 is phone number + OTP, or WhatsApp magic link (`PUT /dd/v1/whats
 | main | `/dd/v1/users/orders/histories` | PUT | JWT |
 | main | `/dd/v1/orders/{orderId}/invoice` | GET | JWT |
 | main | `/dd/v1/orders/{id}/payments/appsdk/init`, `…/payments/sdk/verify` | — | JWT |
+
+Restaurant search (gateway `SearchRestaurantV2`) needs `page_request` and a `user_location`
+(`{latitude, longitude}`) param; `search_text` is a name prefix match. It is geo-boxed and returns
+only Elite-member restaurants as the slim `RestaurantDtoV2` (`uuid`, `name`, `display_name`,
+`google_sub_locality`, `image`, `elite_listing_gallery`, no cuisines or city), under `response[]`.
 
 Feed search sends `post_types` and `cursor` as top-level fields (§2), not inside `page_request`.
 Experience and curation are both created on `POST /v1/feed_posts`. A restaurant story is a
