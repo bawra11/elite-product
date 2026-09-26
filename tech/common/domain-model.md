@@ -25,7 +25,7 @@ Delete and edit render only when the signed-in diner's URN matches `author_urn`
 | `visibility_tags` | string[] | e.g. `["ALL"]` |
 | `feed_visibility` | enum | `FEED_VISIBILITY_PUBLIC`, `FEED_VISIBILITY_INVALID` (seen on a malformed/incomplete sample — treat as "not yet publishable", don't render) |
 | `meta_data` | `FeedPostMetaData` | see below |
-| `post_type` | enum | `FEED_POST_TYPE_EXPERIENCE` and `FEED_POST_TYPE_CURATION` confirmed. Happening is the BE name for a restaurant story; enum spelling is not in the capture |
+| `post_type` | enum | `FEED_POST_TYPE_EXPERIENCE` and `FEED_POST_TYPE_CURATION` confirmed. Happening is the BE name for a restaurant story: `FEED_POST_TYPE_HAPPENING` (protos `feedsvc.proto`), with `payload.happening` `{restaurant_id, starts_at, ends_at}` |
 | `payload` | oneof by `post_type` | `{experience: ExperiencePayload}` and `{curation: CurationPayload}` confirmed |
 | `title`, `body` | string | can be empty strings on draft/incomplete posts |
 | `viewer_reaction` | enum | `FEED_POST_REACTION_HELPFUL` \| `FEED_POST_REACTION_NONE` \| `FEED_POST_REACTION_INVALID` (INVALID = no viewer identity, i.e. anonymous) |
@@ -142,7 +142,7 @@ when the real API lands.
 - `ExperienceDna` / `DnaAxis`: working assumption — restaurant only, and only after 100 verified experiences. 3–6 axes, mention-weighted percentages, verified count, summary. Never on an individual experience.
 - `Curation` / `CurationSpot` / `CuratorSummary`: up to 15 spots; each spot has a note, verified-visited and promoted flags. The wire payload is confirmed (§7); these richer spot fields are still frontend-only.
 - `RestaurantStory`: restaurant-authored happening, with media, dish tags and an offer.
-- `StoryRing`: the Home stories rail.
+- `StoryRing`: the Home stories rail, one ring per restaurant. Until BE ships a stories endpoint, phase01 fills it from happening posts on feed search (placeholder).
 
 **Reaction enum addition:** `ViewerReaction.unhelpful` ↔ `FEED_POST_REACTION_UNHELPFUL`. This is
 inferred from `unhelpful_count` and must be confirmed with BE.

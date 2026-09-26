@@ -1,11 +1,12 @@
 # Profile, follow, and block
 
-Profile is the signed-in diner. A guest who opens the tab gets the auth gate. Analysis metrics are not specified yet, so that area is an empty state.
+Profile is the signed-in diner. A guest who opens the tab sees a guest Profile with "Verify my number", which opens `auth-phone` directly. Analysis metrics are not specified yet, so that area is an empty state.
 
 ```mermaid
 flowchart TD
   tab["Profile tab"] --> gate{Signed in?}
-  gate -->|No| auth["Auth gate"]
+  gate -->|No| guestProfile["Guest profile"]
+  guestProfile -->|Verify my number| auth["auth-phone"]
   auth --> profile
   gate -->|Yes| profile["profile"]
 
