@@ -38,8 +38,9 @@ reach the OTP screen (§2.3), every loop.
 2. **Isolate.** From `APP`, if `git branch --show-current` is not already a `qa/sim-*` branch,
    run `git worktree add .claude/worktrees/sim-qa-<YYYYMMDD-HHMM> -b qa/sim-<YYYYMMDD-HHMM> HEAD`
    (branch from the current HEAD, never from `origin/main`, which is a different app), `cd`
-   into it, and copy `config/stage.json` from the main checkout. Every path below is
-   relative to this worktree.
+   into it, and copy `config/stage.json` from the main checkout. `.claude/worktrees/` is
+   gitignored — do not force-add it, and `git status` in the main checkout must not list
+   it. Every path below is relative to this worktree.
 3. **UI driver.** You need AXe to tap, type, swipe and read the accessibility tree:
    `which axe || brew install cameroncooke/axe/axe`. Run `axe --help` and `axe <cmd> --help`
    once to confirm the exact flags, which vary by version. Coordinates are in **points**. On
@@ -64,15 +65,24 @@ reach the OTP screen (§2.3), every loop.
 1. **Fresh build and launch.**
    ```bash
    xcrun simctl boot "iPhone 17" 2>/dev/null; open -a Simulator
-   UDID=$(xcrun simctl list devices booted | grep -m1 -oE '[0-9A-F-]{36}')
+   # The first booted simulator may belong to another session. Match this device only
+   # ("iPhone 17 (" does not match "iPhone 17 Pro").
+   UDID=$(xcrun simctl list devices booted | grep -F 'iPhone 17 (' | grep -m1 -oE '[0-9A-F-]{36}')
+   if [ -z "$UDID" ]; then
+     echo "iPhone 17 is not booted" >&2
+     exit 1
+   fi
    xcrun simctl ui "$UDID" appearance light; xcrun simctl ui "$UDID" content_size large
-   xcrun simctl uninstall "$UDID" com.explorex.eliteApp 2>/dev/null   # fresh-install state for section A
+   # Bundle id is PRODUCT_BUNDLE_IDENTIFIER in ios/Runner.xcodeproj (co.explorex.elite).
+   # A non-zero exit here means the app was not installed, which is the fresh-install state.
+   xcrun simctl uninstall "$UDID" co.explorex.elite || true
    fvm flutter run -d "$UDID" --dart-define-from-file=config/stage.json \
      > "$RUN/loop-NN/flutter.log" 2>&1
    ```
    Start `flutter run` with `run_in_background: true` and wait (Monitor with an until-loop,
-   not sleep) for `Flutter run key commands` in the log. A build failure counts as a loop
-   failure: fix it, then restart this step.
+   not sleep) for `Flutter run key commands` in the log. If the boot step exits because
+   iPhone 17 is not booted, stop with `needs input:` instead of launching on another
+   device. A build failure counts as a loop failure: fix it, then restart this step.
 2. **Walk every scenario** in `test/sim_qa/scenarios.md` in catalog order (or only `SCENARIOS`).
    For each step:
    - Observe: `axe describe-ui --udid $UDID` to find elements by label or frame. If Flutter

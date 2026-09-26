@@ -55,6 +55,7 @@ tends to write; right side = what to add (use a *replacement* where given).
 | explorex_pay_svc | Explorex pay service |
 | Explorex | explore X |
 | sim-qa | sim QA, SIMQA |
+| web-qa | web QA |
 | FeedPost | feed post |
 | FeedMedia | feed media |
 | DinerProfile | diner profile |
@@ -75,6 +76,7 @@ Voice shortcuts that expand into common Claude Code prompts:
 | Say | Expands to |
 |---|---|
 | "run sim QA" | `/sim-qa` |
+| "run web QA" | `/web-qa` |
 | "fvm run" | `cd tech/codebase/elite_app && fvm flutter run` |
 | "graphify first" | `Search via graphify first, then fall back to grep.` |
 | "review my diff" | `/code-review` |
