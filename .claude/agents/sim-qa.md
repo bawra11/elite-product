@@ -10,9 +10,12 @@ bugs in code, and repeat until the pass rate reaches the target.
 
 Your prompt gives you:
 - `PHONE`, the diner's phone number to verify with (required for section C of the catalog).
-- `OTP_MODE`: `stub` (default, where any 4 digits verify and `0000` is the error case) or `real`.
-- Optionally: `TARGET` (default 90), `MAX_LOOPS` (default 5), `REFRESH_TOKEN` (a stage refresh
-  token passed as `STAGE_REFRESH_TOKEN`), and `SCENARIOS` (a subset of IDs to run).
+- Optionally: `TARGET` (default 90), `MAX_LOOPS` (default 5) and `SCENARIOS` (a subset of IDs
+  to run).
+
+Sign-in is always the real one: the stage gateway sends a 6-digit code on WhatsApp and
+validates it. There is no stub, bypass or test code. The user reads you the code when you
+reach the OTP screen (§2.3), every loop.
 
 ## 0. Ground rules (from the repo's CLAUDE.md — read it first)
 
@@ -35,8 +38,9 @@ Your prompt gives you:
 2. **Isolate.** From `APP`, if `git branch --show-current` is not already a `qa/sim-*` branch,
    run `git worktree add .claude/worktrees/sim-qa-<YYYYMMDD-HHMM> -b qa/sim-<YYYYMMDD-HHMM> HEAD`
    (branch from the current HEAD, never from `origin/main`, which is a different app), `cd`
-   into it, and copy `config/stage.json` from the main checkout. Every path below is
-   relative to this worktree.
+   into it, and copy `config/stage.json` from the main checkout. `.claude/worktrees/` is
+   gitignored — do not force-add it, and `git status` in the main checkout must not list
+   it. Every path below is relative to this worktree.
 3. **UI driver.** You need AXe to tap, type, swipe and read the accessibility tree:
    `which axe || brew install cameroncooke/axe/axe`. Run `axe --help` and `axe <cmd> --help`
    once to confirm the exact flags, which vary by version. Coordinates are in **points**. On
@@ -61,17 +65,24 @@ Your prompt gives you:
 1. **Fresh build and launch.**
    ```bash
    xcrun simctl boot "iPhone 17" 2>/dev/null; open -a Simulator
-   UDID=$(xcrun simctl list devices booted | grep -m1 -oE '[0-9A-F-]{36}')
+   # The first booted simulator may belong to another session. Match this device only
+   # ("iPhone 17 (" does not match "iPhone 17 Pro").
+   UDID=$(xcrun simctl list devices booted | grep -F 'iPhone 17 (' | grep -m1 -oE '[0-9A-F-]{36}')
+   if [ -z "$UDID" ]; then
+     echo "iPhone 17 is not booted" >&2
+     exit 1
+   fi
    xcrun simctl ui "$UDID" appearance light; xcrun simctl ui "$UDID" content_size large
-   xcrun simctl uninstall "$UDID" com.explorex.eliteApp 2>/dev/null   # fresh-install state for section A
+   # Bundle id is PRODUCT_BUNDLE_IDENTIFIER in ios/Runner.xcodeproj (co.explorex.elite).
+   # A non-zero exit here means the app was not installed, which is the fresh-install state.
+   xcrun simctl uninstall "$UDID" co.explorex.elite || true
    fvm flutter run -d "$UDID" --dart-define-from-file=config/stage.json \
-     [--dart-define=STUB_AUTH=false  if OTP_MODE=real] \
-     [--dart-define=STAGE_REFRESH_TOKEN=$REFRESH_TOKEN  if given] \
      > "$RUN/loop-NN/flutter.log" 2>&1
    ```
    Start `flutter run` with `run_in_background: true` and wait (Monitor with an until-loop,
-   not sleep) for `Flutter run key commands` in the log. A build failure counts as a loop
-   failure: fix it, then restart this step.
+   not sleep) for `Flutter run key commands` in the log. If the boot step exits because
+   iPhone 17 is not booted, stop with `needs input:` instead of launching on another
+   device. A build failure counts as a loop failure: fix it, then restart this step.
 2. **Walk every scenario** in `test/sim_qa/scenarios.md` in catalog order (or only `SCENARIOS`).
    For each step:
    - Observe: `axe describe-ui --udid $UDID` to find elements by label or frame. If Flutter
@@ -93,12 +104,18 @@ Your prompt gives you:
    - If a failure leaves the app unusable, relaunch (`R` hot restart, or kill and re-run) and
      continue with the next scenario. Don't abort the loop.
 3. **When a scenario needs the user:**
-   - `PHONE` missing, or `OTP_MODE=real` and the code has just been sent: **stop and return**
-     exactly this, as your final message:
-     `NEEDS_OTP: sent to •••••• <last4>. Reply with the code.` (or `NEEDS_PHONE: …`). You
-     will be resumed with the value. Keep the simulator and `flutter run` alive, and pick
-     up at the same step.
-   - With stub auth, never ask. Use `0000` for C3 and `1234` for C4.
+   - `PHONE` missing: stop and return `NEEDS_PHONE: …` as your final message.
+   - **On the OTP screen** (C2 has passed and the code has just been sent): **stop and
+     return** exactly this, as your final message:
+     `NEEDS_OTP: sent to •••••• <last4>. Reply with the code.` You will be resumed with the
+     code. Keep the simulator and `flutter run` alive, and pick up at the same step. This
+     happens every loop, because each loop starts from a fresh install.
+   - With the code in hand: for C3, enter a wrong code made by changing the last digit of
+     the real one, and check the inline error. Then clear the field and enter the real code
+     for C4. If the gateway rejects the real code after the wrong attempt, tap resend and
+     return `NEEDS_OTP` again, and note it in the report.
+   - Never guess, reuse an old code, or look for a way around verification. If the code
+     expires before you use it, resend and ask again.
 4. **Bug report per failure.** Write `bugs/BUG-NNN-<slug>.md`. Numbering is global across the
    run: a bug keeps its number in later loops.
    ~~~markdown
@@ -120,7 +137,7 @@ Your prompt gives you:
    <what changed, filled in after the fix>
    ~~~
 5. **Loop report.** Write `loop-NN/REPORT.md`: date, branch and commit tested, device and iOS
-   version, OTP mode, a scenario table (`ID | Scenario | Result | Bug | Screenshot`), the
+   version, a scenario table (`ID | Scenario | Result | Bug | Screenshot`), the
    pass rate `passed / (total − blocked)` as a % with counts, new, still-open and regressed
    bugs, and fixes verified this loop. Update `SUMMARY.md` with one row per loop.
 

@@ -129,9 +129,14 @@ mock until a capture exists:
 ## Frontend-only entities
 
 These shapes are not backed by a captured payload yet. Missing data shows an empty
-state. `DemoDiscoveryRepository` / `AppConfig.useDemoDiscovery` is not the product
-path. Discovery is not a destination: that UI is the story viewer opened from the
+state. Discovery is not a destination: that UI is the story viewer opened from the
 circular bubbles on Home.
+
+Implemented in `elite_app/lib/domain/entities/discovery.dart` and
+`experience_dna.dart`. Every build wires `RemoteDiscoveryRepository` against stage.
+`DemoDiscoveryRepository` is kept only as a fake for tests and design captures. Each
+entity maps to a future endpoint behind `DiscoveryRepository`, so screens won't change
+when the real API lands.
 
 - `RestaurantSummary`: the diner-facing slice of a restaurant (name, area, cuisine, hero/logo, recommended, DNA, amenities, live vibe). Lookup by id is `GET /dd/v1/public/restaurant_catalog/restaurants/{id}` (phase01 catalog). DNA and live vibe are still missing. Feed posts carry only `restaurant_id`.
 - `ExperienceDna` / `DnaAxis`: working assumption — restaurant only, and only after 100 verified experiences. 3–6 axes, mention-weighted percentages, verified count, summary. Never on an individual experience.
@@ -145,6 +150,5 @@ inferred from `unhelpful_count` and must be confirmed with BE.
 **Auth is phone number + OTP, or WhatsApp magic link.** Stage has
 `POST /dd/v1/authentication/otps`, `PUT /dd/v1/login/otp`, and `PUT /dd/v1/whatsapp/login`.
 phase01 keeps all three. There is no password endpoint. Handle availability is still
-missing. Until phase01 is wired, debug builds use `StubOtpAuthRepository` (any 4-digit
-code except `0000`, then `--dart-define=STAGE_REFRESH_TOKEN`). Release builds use
-`UnavailableAuthRepository`.
+missing. Every build signs in through `DineInOtpAuthRepository` (6-digit WhatsApp OTP).
+There is no stub, test code, or refresh-token bypass.

@@ -11,10 +11,12 @@ the `sim-qa` agent: same catalog, same reports, same fix loop, but no simulator 
 
 Your prompt gives you:
 - `PHONE`, the diner's phone number to verify with (required for section C of the catalog).
-- `OTP_MODE`: `stub` (default, where any 4 digits verify and `0000` is the error case) or `real`.
-- Optionally: `TARGET` (default 90), `MAX_LOOPS` (default 5), `REFRESH_TOKEN` (a stage refresh
-  token passed as `STAGE_REFRESH_TOKEN`), `SCENARIOS` (a subset of IDs), and `PORT`
-  (default 8686).
+- Optionally: `TARGET` (default 90), `MAX_LOOPS` (default 5), `SCENARIOS` (a subset of IDs),
+  and `PORT` (default 8686).
+
+Sign-in is always the real one: the stage gateway sends a 6-digit code on WhatsApp and
+validates it. There is no stub, bypass or test code. The user reads you the code when you
+reach the OTP screen (§2.4), every loop.
 
 ## 0. Ground rules (from the repo's CLAUDE.md — read it first)
 
@@ -40,12 +42,12 @@ Your prompt gives you:
 2. **Isolate.** From `APP`, if `git branch --show-current` is not already a `qa/web-*` branch,
    run `git worktree add .claude/worktrees/web-qa-<YYYYMMDD-HHMM> -b qa/web-<YYYYMMDD-HHMM> HEAD`
    (branch from the current HEAD, never from `origin/main`, which is a different app), `cd`
-   into it, and copy `config/stage.json` from the main checkout. Every path below is
-   relative to this worktree.
-3. **Web platform.** If `web/` doesn't exist, run `fvm flutter create --platforms=web .` and
-   add `web/` to `.git/info/exclude` so it isn't committed (ask the user in the final report
-   whether they want it tracked). Don't let `flutter create` overwrite anything else: check
-   `git status` afterwards and restore any modified tracked file.
+   into it, and copy `config/stage.json` from the main checkout. `.claude/worktrees/` is
+   gitignored — do not force-add it, and `git status` in the main checkout must not list
+   it. Every path below is relative to this worktree.
+3. **Web platform.** `web/` is already tracked. It is the dine-in web shell (payment
+   scripts, cutover bootstrap). Never run `flutter create`, and never regenerate or
+   commit over `web/`.
 4. **Run folder.** `RUN=test/sim_qa/runs/web-<YYYY-MM-DD_HHMM>`, with the same layout as
    sim-qa:
    ```
@@ -67,28 +69,32 @@ Your prompt gives you:
    ```bash
    fvm flutter run -d web-server --web-port $PORT --web-hostname localhost \
      --dart-define-from-file=config/stage.json \
-     [--dart-define=STUB_AUTH=false  if OTP_MODE=real] \
-     [--dart-define=STAGE_REFRESH_TOKEN=$REFRESH_TOKEN  if given] \
      > "$RUN/loop-NN/flutter.log" 2>&1
    ```
    Start it with `run_in_background: true` and wait (Monitor with an until-loop, not sleep)
    for `is being served at` in the log. If the port is taken by another process, pick the
    next free one.
-   - **Web compile errors** (for example `dart:io` `File` / `Image.file` in
-     `lib/core/ui/media.dart` or the media upload repository) are BUG-000-style blockers.
-     Fix them the smallest way that leaves mobile behaviour identical (`kIsWeb` guards or a
-     conditional import), keep `verify.sh` green, and list them under "web-compat fixes" in
-     the report. If a fix would change mobile behaviour, stop with `needs input:`.
+   - **Web compile errors.** `import 'dart:io'` is a compile error on web even inside a
+     `kIsWeb` check. Local files already go through `if (dart.library.io)`
+     (`lib/core/ui/local_file_image.dart`, `lib/data/repositories_impl/local_upload.dart`),
+     and the dine-in client uses `defaultTargetPlatform` instead of `Platform`. If a new
+     `dart:io` import in `lib/` breaks the build, fix it the same way, keep `verify.sh`
+     green, and list it under "web-compat fixes". If the fix would change mobile
+     behaviour, stop with `needs input:`.
 2. **Open the app.** `tabs_context_mcp` → create a new tab → `resize_window` to a phone
    viewport (**430 × 932**) → navigate to `http://localhost:$PORT`.
    - **Semantics:** Flutter web draws to a canvas. Once the first frame is up, run
      `document.querySelector('flt-semantics-placeholder')?.click()` with the JavaScript
      tool so `read_page` / `find` can see labels. If an element still has no semantics,
      fall back to a screenshot and click by coordinates.
-   - **Fresh-install state** (section A, and the start of every loop): clear this origin
-     only, with JS: `localStorage.clear(); sessionStorage.clear();` plus
-     `indexedDB.databases().then(d => d.forEach(x => indexedDB.deleteDatabase(x.name)))`,
-     then reload.
+   - **Fresh-install state** (section A, and the start of every loop): reload
+     `http://localhost:$PORT/?reset-storage=1`. `web/bootstrap.js` clears
+     `localStorage`, `sessionStorage` and the known Hive databases **before** Flutter
+     opens them, then strips the param so a later reload (A4, C5) keeps the session.
+     **Never call `indexedDB.databases()`**, and do not `deleteDatabase` from the
+     running app: Chrome can hang while listing origin databases, and a delete is
+     blocked while Hive holds the connection. If a loop still resumes a session,
+     add the new `Hive.openBox` name to the `qaBoxes` list in `bootstrap.js`.
    - **CORS:** if the console shows CORS or `XMLHttpRequest error` failures against the stage
      `baseUrl`, the backend doesn't allow `localhost`. Every networked scenario would be
      BLOCKED, so stop with `needs input: stage API rejects localhost (CORS) — …` and the
@@ -98,12 +104,26 @@ Your prompt gives you:
 
    | Simulator step | Web equivalent |
    |---|---|
-   | uninstall / fresh install (A1) | clear origin storage (above) and reload |
+   | uninstall / fresh install (A1) | reload `/?reset-storage=1` (bootstrap clears storage, then strips the param) |
    | relaunch without uninstall (A4, C5) | reload the tab |
    | `axe tap` / `type` / `swipe` | `computer` click, type, scroll; `form_input` for fields |
    | F1 background / foreground | open another tab for a few seconds, return; then reload |
-   | F2 dark mode | only if the app has an in-app theme switch; otherwise **N/A-web** |
-   | F3 large text | browser zoom to 150% (`cmd +`), then reset to 100% |
+   | F2 dark mode | reload `http://localhost:$PORT/?color-scheme=dark` (see below), walk the screens, then reload without the param |
+   | F3 large text | reload with `?text-scale=1.24` (see below), then reload without it |
+
+   **F2.** The diner app uses `ThemeMode.system`. `web/bootstrap.js` patches
+   `matchMedia('prefers-color-scheme')` only when the page URL has `?color-scheme=dark`
+   or `light`, and only if that script runs before Flutter. Load the URL, then walk
+   in-app (a client-side route keeps the patch). Restore light by reloading without the
+   param. If the boot splash never leaves while the param is set, drop it, mark F2
+   **N/A-web**, and quote the console error.
+
+   **F3.** Browser zoom and the web shell's `user-scalable=no` viewport do not change
+   Flutter's text scale. Debug web reads `?text-scale=` once in `main()` before go_router
+   rewrites the URL (`captureDebugWebTextScale`). `1.24` is Apple extra-extra-large
+   relative to Large (21/17). Release builds ignore it. Reload without the param to
+   restore. The param is not a substitute for the iOS content-size category; say that
+   in the report.
 
    **N/A-web** counts like BLOCKED (excluded from the denominator) but is listed separately.
    For each step:
@@ -111,11 +131,20 @@ Your prompt gives you:
      by polling, never with a fixed long sleep.
    - **Screenshot every scenario's final state** to
      `$RUN/loop-NN/screenshots/<ID>-<step>.png`. The extension's screenshot is for your eyes
-     only, so save a file with
-     `screencapture -x -o -l $(osascript -e 'tell app "Google Chrome" to id of window 1') <file>`
-     (or `-R x,y,w,h` of the viewport), then `sips -Z 1200 <file>`. If `screencapture` is
-     denied (no Screen Recording permission), note it once in the report and keep going
-     without files. Judge the screenshot against the scenario's *expect* and the design (the
+     only. Read the viewport rect from the page (CSS pixels, which match macOS points):
+     ```javascript
+     (() => {
+       const side = Math.max(window.outerWidth - window.innerWidth, 0);
+       const bar = Math.max(window.outerHeight - window.innerHeight, 0);
+       return { x: window.screenX + side, y: window.screenY + bar,
+                w: window.innerWidth, h: window.innerHeight };
+     })()
+     ```
+     then `bash test/sim_qa/capture_chrome.sh <file> <x> <y> <w> <h>`. That script captures
+     the rectangle with CoreGraphics (not `screencapture -l`, and not the AppleScript
+     window id, which is a different number) and downscales with `sips`. If it fails for
+     lack of Screen Recording permission, note it once and keep going without files.
+     Judge the screenshot against the scenario's *expect* and the design (the
      `data-screen` blocks named in CLAUDE.md and the audit rules in
      `product/design/README.md`).
    - Check errors: `read_console_messages` (filter for `EXCEPTION CAUGHT`, `overflowed`,
@@ -127,12 +156,18 @@ Your prompt gives you:
    - If a failure leaves the app unusable, hot restart (`R` to the `flutter run` task) or
      reload the tab and continue with the next scenario. Don't abort the loop.
 4. **When a scenario needs the user:**
-   - `PHONE` missing, or `OTP_MODE=real` and the code has just been sent: **stop and return**
-     exactly this, as your final message:
-     `NEEDS_OTP: sent to •••••• <last4>. Reply with the code.` (or `NEEDS_PHONE: …`). You
-     will be resumed with the value. Keep `flutter run` and the tab alive, and pick up at the
-     same step.
-   - With stub auth, never ask. Use `0000` for C3 and `1234` for C4.
+   - `PHONE` missing: stop and return `NEEDS_PHONE: …` as your final message.
+   - **On the OTP screen** (C2 has passed and the code has just been sent): **stop and
+     return** exactly this, as your final message:
+     `NEEDS_OTP: sent to •••••• <last4>. Reply with the code.` You will be resumed with the
+     code. Keep `flutter run` and the tab alive, and pick up at the same step. This happens
+     every loop.
+   - With the code in hand: for C3, enter a wrong code made by changing the last digit of
+     the real one, and check the inline error. Then clear the field and enter the real code
+     for C4. If the gateway rejects the real code after the wrong attempt, tap resend and
+     return `NEEDS_OTP` again, and note it in the report.
+   - Never guess, reuse an old code, or look for a way around verification. If the code
+     expires before you use it, resend and ask again.
 5. **Bug reports and loop report** are exactly as in `.claude/agents/sim-qa.md` §2.4–2.5
    (read it), with these differences: the report header says `Platform: Flutter web
    (Chrome <version>, 430×932)` instead of device and iOS version, and the scenario table
@@ -156,5 +191,5 @@ dependencies, `main.dart` or dart-defines. Re-run the whole catalog each loop.
    - pass rate per loop (e.g. `62% → 81% → 93%`), and the N/A-web scenarios
    - bugs found / fixed / blocked, with one line each, plus any web-compat fixes
    - branch name and the path to `SUMMARY.md` and the last `REPORT.md`
-   - what still needs the user (BE gaps, CORS, whether to track `web/`, and "confirm on
-     /sim-qa before release": web can't catch iOS-only issues)
+   - what still needs the user (BE gaps, CORS, and "confirm on /sim-qa before release":
+     web can't catch iOS-only issues)
