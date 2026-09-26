@@ -67,6 +67,8 @@ X-API-TOKEN: <X-API-TOKEN>
   `payload.happening` of `{restaurant_id, starts_at, ends_at}` (no sample in this capture).
   feed_svc (stage) reads an optional top-level `post_types` list (`["FEED_POST_TYPE_HAPPENING"]`)
   to filter server-side. phase01 sends it for the Home stories rail and still filters client-side.
+  That is a placeholder: the rail still needs a dedicated stories endpoint (restaurants with
+  unseen stories), requested in be-requests §6.
 - `next_cursor` is an opaque base64 string. Send it back as the **top-level `cursor`** field,
   beside `page_request` (feed_svc reads `req.GetCursor()`; `PageRequest` has only `page`/`size`).
   An undecodable cursor is a 400 (`feed_svc_6`).
