@@ -62,9 +62,11 @@ X-API-TOKEN: <X-API-TOKEN>
 `200` → `{ posts: FeedPost[], page_response: {total: "12", has_next_page}, next_cursor }`
 
 - `viewer_reaction` is always `FEED_POST_REACTION_INVALID` here (no viewer identity).
-- The feed mixes post types: `FEED_POST_TYPE_EXPERIENCE` and `FEED_POST_TYPE_CURATION` both
-  come back. feed_svc (stage) also reads an optional top-level `post_types` list
-  (`["FEED_POST_TYPE_CURATION"]`) to filter server-side; not yet exercised on stage.
+- The feed mixes post types. `FEED_POST_TYPE_EXPERIENCE` and `FEED_POST_TYPE_CURATION` both
+  come back. A restaurant story is the same feed with the BE type happening (no sample in
+  this capture). feed_svc (stage) reads an optional top-level `post_types` list
+  (`["FEED_POST_TYPE_CURATION"]`) to filter server-side. phase01 should send that field.
+  It was not exercised in the 2026-09-23 capture.
 - `next_cursor` is an opaque base64 string. Send it back as the **top-level `cursor`** field,
   beside `page_request` (feed_svc reads `req.GetCursor()`; `PageRequest` has only `page`/`size`).
   An undecodable cursor is a 400 (`feed_svc_6`).
@@ -390,9 +392,10 @@ The `price` scale is unconfirmed (docs/issues.md M10).
 
 ## 21. Delete feed post
 
-> **BE security gap:** feed_svc's `DeleteFeedPostByUUID` does not check that the caller wrote
-> the post, so any signed-in diner can delete any post. Only offer delete on the diner's own posts,
-> and get BE to add an author check.
+Show **delete** and **edit** only when the signed-in diner is the author (`author_urn`, else
+`created_by_urn`). feed_svc's `DeleteFeedPostByUUID` does not check the author, so the app
+must hide both actions from everyone else. There is still no captured edit route
+(`PUT /v1/feed_posts/{uuid}`).
 
 ```
 DELETE /v1/feed_posts/{uuid}
@@ -407,69 +410,79 @@ Authorization: $ACCESS_TOKEN
 
 ---
 
-## Already on stage: endpoints the dine-in app (`origin/main`) uses
+## Phase01 endpoint set
 
-Checked 2026-09-25 against `origin/main` @ `b971951` (`lib/core/constants/api_endpoints.dart`).
-The public ones were confirmed live on stage (HTTP 200 with `x-api-token`, no JWT). These close
-several gaps below without new BE work. Note that they speak **proto3 JSON** (`dd/v1/...`), not the
-feed service's shapes, so each needs its own DTO.
+phase01 calls the union of two lists. This environment cannot read `explorexinc/elite`
+(`main` or `phase01` both 404), so the union is taken from the documents below, and the
+app tree was not changed.
 
-| Gap in Elite | Endpoint on stage | Method | Auth | Verified live |
-|---|---|---|---|---|
-| OTP request | `/dd/v1/authentication/otps` (`GenerateOtpRequest`, WhatsApp, purpose LOGIN) | POST | none | code only |
-| OTP verify → tokens | `/dd/v1/login/otp` (`ValidateOtpRequest`) → `DDUserLoginWithOtpResponse` | PUT | none | code only |
-| First-time sign-up | `/dd/v1/register/otp` (`otp_validation_attempt_uuid` + first/last name, phone, dob) | POST | none | code only |
-| WhatsApp magic-link login | `/dd/v1/whatsapp/login` (`uuid`) | PUT | none | code only |
-| Update the diner (name, dob, gender, avatar) | `/dd/v1/users/current` (`UserDto`) | **PATCH** | JWT | code only |
-| Avatar upload URL | `/dd/v1/users/current/file_upload` then S3 PUT | PUT | JWT | code only |
-| Restaurant by id | `/dd/v1/public/restaurant_catalog/restaurants/{id}` (and non-public) | GET | public / JWT | **yes**: CTB, with details and galleries |
-| Restaurant search | `/dd/v1/public/restaurant_catalog/restaurants/search` (and non-public), `page_request` + `request[]` incl. `user_location` | PUT | public / JWT | **yes**: 5 Bengaluru results |
-| Live Menu | `/dd/v1/public/restaurant_catalog/restaurants/{id}/live_menus` (and non-public), then dishes via `/dd/v1/public/restaurant_catalog/dish_menus/search` (`menu_ids`, `restaurant_ids`, `x-restaurant-id` headers) | GET, PUT | public / JWT | **yes**: CTB's menus |
-| Discovery filters and sorts | `/dd/v1/elite_discovery_configs` | GET | public / JWT | **yes** |
-| Diner's visits (for verified experiences) | `/dd/v1/users/orders/histories` (`page_request`, `restaurant_ids`) | PUT | JWT | code only |
-| Bill line items (dish tags) | `/dd/v1/orders/{orderId}/invoice` (`x-account-id`, `x-franchise-id`, `x-restaurant-id`) | GET | JWT | code only |
-| Pay a bill | `/dd/v1/orders/{id}/payments/appsdk/init`, `…/payments/sdk/verify` | — | JWT | code only |
+1. Elite feed and social routes in §1–21 (the stage curl capture).
+2. Dine-in routes recorded 2026-09-25 from `origin/main` @ `b971951`
+   (`lib/core/constants/api_endpoints.dart`). The public ones returned HTTP 200 on stage
+   with `x-api-token`. They speak proto3 JSON (`dd/v1/...`), so each needs its own DTO.
 
-Not on `main` either (still needs BE): handle availability, public profiles, posts by author,
-Experience DNA, Live Vibe, reserve a table, post-type filter and cursor field, guest single post,
-post update/drafts/report, trait read-back, restaurant stories, tokens and Amplify, and push
-registration (`main` doesn't register push at all).
+Auth on phase01 is phone number + OTP, or WhatsApp magic link (`PUT /dd/v1/whatsapp/login`). No password route.
 
-## Missing endpoints the app expects
-
-Every item is wired in the app behind a repository interface. Until BE ships it, the app shows
-an empty state or "coming soon", never demo data (see `lib/core/di/injection.dart`).
-
-| Area | Endpoint needed | App seam today | Blocks |
+| Source | Endpoint | Method | Auth |
 |---|---|---|---|
-| **Auth** | OTP request (`phone` → challenge id, code length, resend-after) | `AuthRepository.requestOtp`; stub in debug | Any sign-in on a release build |
-| | OTP verify (→ access + refresh token) | `AuthRepository.verifyOtp` | Same |
-| | Handle availability (`GET …?handle=`) | `AuthRepository.isHandleAvailable` (always true) | Unique handles |
-| **Profile** | Update the diner (display name, handle, DOB, gender, avatar) | Naming is saved on-device only; "Save profile" does nothing | Real identity on posts; `author.display_name` is `""` everywhere |
-| | Another user's public profile | — | Tapping a curator or author |
-| | Posts by author (the diner's own, and others') | Profile filters Home's loaded pages | A real "My posts" list |
-| | Profile analysis data | Computed from loaded posts | The "Analysis" tab |
-| **Restaurants** | Restaurant by id (diner slice: name, area, cuisines, gallery, timings, tags) | `RestaurantDirectory` knows only membership restaurants | Every place row for any other restaurant shows "Restaurant" |
-| | Restaurant search (text + location) | Directory search over membership restaurants | Picking a place to post about or curate |
-| | Experience DNA + verified-experience count per restaurant | `RestaurantSummary.dna` null | DNA hex, "Worth it" crowd call |
-| | Live Vibe (floor status), Live Menu (menu + availability) | `/restaurant/:id/vibe` and `/menu` show empty states | Live service |
-| | Reserve a table, pay a bill | Toast | Transactions |
-| **Feed** | A `post_type` filter on §2–3 | Client-side filter of a mixed page | Full Curation and Experience tabs; paging |
-| | Confirmed cursor field for `next_cursor` | Sent as `page_request.cursor` | Infinite scroll (H2) |
-| | Public single post (guest-readable §8) + share URL scheme | Guest sees only cached posts | Shared links, deep links |
-| | Confirm `FEED_POST_REACTION_UNHELPFUL` | Sent as-is | "Not helpful" (M6) |
-| | Update a post (`PUT /v1/feed_posts/{id}`) | Published curations are read-only | Editing a curation, fixing a typo |
-| | Draft status on create/list | Drafts kept in memory on the device | Drafts across devices and restarts |
-| | Report a post | — | App-store UGC requirement |
-| | Exclude soft-deleted posts from §2–3 | — | §21 working (BE bug above) |
-| **Create** | Diner's visits per restaurant, with verification state | Returns none, so every post is unverified | Verified experiences, dish tags |
-| | Bill line items for a visit | Returns none | Dish tags |
-| | Enrichment trait read-back + one correction per post | "What we read" card hidden | Axis edit |
-| | Curation cover suggestions / `cover_media_id` echo | Cover copied from gallery and re-uploaded | — |
-| | Google-place import (server-side place resolution) | Deferred (P2.13) | Curating non-partner places |
-| **Discovery** | Curations list (with `post_type` filter or dedicated) | Filtered from the feed | Curation paging |
-| | Restaurant stories (list, by id) + stories rail | Empty states | Stories |
-| **Tokens** | Balance, ledger, award on publish | Card hidden / 0 awarded | Token wallet |
-| | Amplify (credits, token spend, one-off payment) | "Amplify is coming soon." | Amplify |
-| **Other** | Push token registration (OneSignal) | — | Notifications |
-| | Location-aware ranking city list / geocode | Fixed Bengaluru lat/lng | Other cities (H6) |
+| §1 | `/dd/v1/auth_tokens/refresh` | POST | refresh token |
+| §2 | `/v1/public/feed_posts` | PUT | `X-API-TOKEN` |
+| §3 | `/v1/feed_posts` (search) | PUT | JWT |
+| §4 | `/v1/feed_posts/file_uploads` | PUT | JWT |
+| §6–7 | `/v1/feed_posts` (create experience or curation) | POST | JWT |
+| §8 | `/v1/feed_posts/{uuid}` | GET | JWT |
+| §9–10 | `/v1/feed_posts/{uuid}/reaction` | PUT | JWT |
+| §11 | `/v1/follows` | PUT | JWT |
+| §12 | `/v1/follows/following` | GET | JWT |
+| §13 | `/v1/follows/following_count` | GET | JWT |
+| §14 | `/v1/follows/{followee_uuid}/followers` | GET | JWT |
+| §15 | `/v1/follows/{followee_uuid}/follower_count` | GET | JWT |
+| §16 | `/v1/follows/unfollow` | POST | JWT |
+| §17 | `/v1/blocks` | PUT | JWT |
+| §18 | `/v1/blocks` | GET | JWT |
+| §19 | `/v1/blocks/unblock` | POST | JWT |
+| §20 | `/dd/v1/users/current` | GET | JWT |
+| §21 | `/v1/feed_posts/{uuid}` | DELETE | JWT, author only in the UI |
+| main | `/dd/v1/authentication/otps` | POST | none |
+| main | `/dd/v1/login/otp` | PUT | none |
+| main | `/dd/v1/register/otp` | POST | none |
+| main | `/dd/v1/whatsapp/login` | PUT | none |
+| main | `/dd/v1/users/current` | PATCH | JWT |
+| main | `/dd/v1/users/current/file_upload` | PUT | JWT |
+| main | `/dd/v1/public/restaurant_catalog/restaurants/{id}` | GET | public / JWT |
+| main | `/dd/v1/public/restaurant_catalog/restaurants/search` | PUT | public / JWT |
+| main | `/dd/v1/public/restaurant_catalog/restaurants/{id}/live_menus` | GET | public / JWT |
+| main | `/dd/v1/public/restaurant_catalog/dish_menus/search` | PUT | public / JWT |
+| main | `/dd/v1/elite_discovery_configs` | GET | public / JWT |
+| main | `/dd/v1/users/orders/histories` | PUT | JWT |
+| main | `/dd/v1/orders/{orderId}/invoice` | GET | JWT |
+| main | `/dd/v1/orders/{id}/payments/appsdk/init`, `…/payments/sdk/verify` | — | JWT |
+
+Feed search sends `post_types` and `cursor` as top-level fields (§2), not inside `page_request`.
+Experience and curation are both created on `POST /v1/feed_posts`. A restaurant story is a
+happening on those same routes; there is no separate stories endpoint in either list.
+
+## Still absent from both documented lists
+
+Not in §1–21 and not in dine-in `main` @ `b971951`. The app shows an empty state or
+"coming soon" for these, never demo data (`lib/core/di/injection.dart`).
+
+| Area | What's missing | App seam today |
+|---|---|---|
+| Auth | Handle availability | `AuthRepository.isHandleAvailable` (always true) |
+| Profile | Another user's public profile | — |
+| Profile | Posts by author | Profile filters Home's loaded pages |
+| Profile | Analysis metrics | Computed from loaded posts |
+| Restaurants | Experience DNA + verified-experience count | `RestaurantSummary.dna` null |
+| Restaurants | Live Vibe | `/restaurant/:id/vibe` empty |
+| Restaurants | Reserve a table | Toast |
+| Feed | Guest-readable single post | `GET` §8 requires a JWT |
+| Feed | `FEED_POST_REACTION_UNHELPFUL` confirmed | Sent as-is |
+| Feed | Edit route (`PUT /v1/feed_posts/{uuid}`) | Edit hidden except for the author, and the route is not captured |
+| Feed | Drafts, report-post | In-memory drafts; no report |
+| Feed | Search must hide soft-deleted posts | §21 bug |
+| Create | Happening / restaurant-story sample body | Empty states on the stories rail |
+| Create | Enrichment trait read-back | "What we read" card hidden |
+| Create | `cover_media_id` echo, Google-place import | Cover re-uploaded; non-partner places deferred |
+| Tokens | Balance, ledger, Amplify | Wallet card hidden; "Amplify is coming soon." |
+| Other | Push registration, city list / geocode | No push; fixed Bengaluru lat/lng |

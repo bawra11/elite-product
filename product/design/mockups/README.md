@@ -51,7 +51,7 @@ groups below were rebuilt from the screen ids, and they follow the prototype's r
 | --- | --- | --- | --- |
 | `explore-landing` | Explore landing | main (cut off) / sa | `explore/…/explore_screen.dart` |
 | `explore-search` | Explore search results | sa | `explore/…/explore_results_screen.dart` |
-| `discovery` | Discovery feed | sa | `discovery/…/discovery_screen.dart` |
+| `discovery` | Discovery feed | sa | UI reused as the Home story viewer (`story-view` from the circular bubbles). Not a tab or a feed. |
 | `curation-feed` | Curation Feed View | export only | not built |
 
 ## 5 · Content detail (3)
@@ -118,7 +118,8 @@ groups below were rebuilt from the screen ids, and they follow the prototype's r
 ## Out of the prototype, decided in the app
 
 The tab bar follows the product journal (Home · Experience · Create · Curation · Profile) and not the
-prototype's Home · Explore · Discovery · Profile. See `../README.md`, decided 2026-09-22.
+prototype's Home · Explore · Discovery · Profile. Discovery is removed as a destination; that UI is the
+story viewer for the circular bubbles on Home (2026-09-26). See `../README.md`.
 
 ## Keeping this current
 
