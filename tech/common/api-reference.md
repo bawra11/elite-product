@@ -421,7 +421,7 @@ app tree was not changed.
    (`lib/core/constants/api_endpoints.dart`). The public ones returned HTTP 200 on stage
    with `x-api-token`. They speak proto3 JSON (`dd/v1/...`), so each needs its own DTO.
 
-Auth on phase01 is phone number + OTP. No password route.
+Auth on phase01 is phone number + OTP, or WhatsApp magic link (`PUT /dd/v1/whatsapp/login`). No password route.
 
 | Source | Endpoint | Method | Auth |
 |---|---|---|---|

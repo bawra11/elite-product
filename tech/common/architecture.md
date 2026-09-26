@@ -30,7 +30,7 @@ lib/
     curation/                # tab 4 + create-curation flow
     profile/
     feed_shared/             # widgets/blocs shared by home/experience/curation lists (the "post card")
-    auth/                    # phone + OTP, session, token refresh
+    auth/                    # phone + OTP, WhatsApp magic link, session, token refresh
     restaurant_detail/
     follows_blocks/
   domain/

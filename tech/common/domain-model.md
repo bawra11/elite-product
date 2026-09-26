@@ -115,7 +115,7 @@ seam), but keep their data sources behind a repository interface that can be poi
 mock until a capture exists:
 
 - **`RestaurantStory`** — product name for the BE post type happening. `{uuid, restaurant, photos[], dishTags[], offers[], actions[], tags[], body}`, plus `starts_at` / `ends_at` (`ends_at` ≥ `starts_at`). Same `feed_posts` routes as experience and curation. No sample body yet.
-- **Onboarding phase-1** (`name` + `username` claim) is local until a profile write lands. **Phase-2** is phone number + OTP only (`POST /dd/v1/authentication/otps`, `PUT /dd/v1/login/otp`). No password.
+- **Onboarding phase-1** (`name` + `username` claim) is local until a profile write lands. **Phase-2** is phone number + OTP (`POST /dd/v1/authentication/otps`, `PUT /dd/v1/login/otp`) or WhatsApp magic link (`PUT /dd/v1/whatsapp/login`). No password.
 
 ## Numeric encoding gotchas (apply across the whole API)
 
@@ -126,15 +126,15 @@ mock until a capture exists:
   factor with BE, then centralize the conversion in one place (e.g. `Money` value type),
   never inline the division in a widget.
 
-## Frontend-only entities (demo-backed until BE ships them)
+## Frontend-only entities
 
-Implemented in `elite_app/lib/domain/entities/discovery.dart` and
-`experience_dna.dart`. They are served by `DemoDiscoveryRepository`, gated by
-`AppConfig.useDemoDiscovery`. Each maps to a future endpoint behind
-`DiscoveryRepository`, so screens won't change when the real API lands.
+These shapes are not backed by a captured payload yet. Missing data shows an empty
+state. `DemoDiscoveryRepository` / `AppConfig.useDemoDiscovery` is not the product
+path. Discovery is not a destination: that UI is the story viewer opened from the
+circular bubbles on Home.
 
 - `RestaurantSummary`: the diner-facing slice of a restaurant (name, area, cuisine, hero/logo, recommended, DNA, amenities, live vibe). Lookup by id is `GET /dd/v1/public/restaurant_catalog/restaurants/{id}` (phase01 catalog). DNA and live vibe are still missing. Feed posts carry only `restaurant_id`.
-- `ExperienceDna` / `DnaAxis`: 3–6 axes, mention-weighted percentages, verified count, summary.
+- `ExperienceDna` / `DnaAxis`: working assumption — restaurant only, and only after 100 verified experiences. 3–6 axes, mention-weighted percentages, verified count, summary. Never on an individual experience.
 - `Curation` / `CurationSpot` / `CuratorSummary`: up to 15 spots; each spot has a note, verified-visited and promoted flags. The wire payload is confirmed (§7); these richer spot fields are still frontend-only.
 - `RestaurantStory`: restaurant-authored happening, with media, dish tags and an offer.
 - `StoryRing`: the Home stories rail.
@@ -142,8 +142,9 @@ Implemented in `elite_app/lib/domain/entities/discovery.dart` and
 **Reaction enum addition:** `ViewerReaction.unhelpful` ↔ `FEED_POST_REACTION_UNHELPFUL`. This is
 inferred from `unhelpful_count` and must be confirmed with BE.
 
-**Auth is phone number + OTP.** Stage already has `POST /dd/v1/authentication/otps` and
-`PUT /dd/v1/login/otp` (dine-in `main`). phase01 should call those. There is no password
-endpoint. Handle availability is still missing. Until phase01 is wired, debug builds use
-`StubOtpAuthRepository` (any 4-digit code except `0000`, then
-`--dart-define=STAGE_REFRESH_TOKEN`). Release builds use `UnavailableAuthRepository`.
+**Auth is phone number + OTP, or WhatsApp magic link.** Stage has
+`POST /dd/v1/authentication/otps`, `PUT /dd/v1/login/otp`, and `PUT /dd/v1/whatsapp/login`.
+phase01 keeps all three. There is no password endpoint. Handle availability is still
+missing. Until phase01 is wired, debug builds use `StubOtpAuthRepository` (any 4-digit
+code except `0000`, then `--dart-define=STAGE_REFRESH_TOKEN`). Release builds use
+`UnavailableAuthRepository`.
