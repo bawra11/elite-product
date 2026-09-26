@@ -1,7 +1,24 @@
-[submodule "elite-app"]
-	path = elite-app
-	url = git@github.com:explorexinc/elite-app.git
-	branch = dev
-[submodule "elite"]
-	path = elite
-	url = https://github.com/explorexinc/elite.git
+[submodule "tech/codebase/elite_app"]
+	path = tech/codebase/elite_app
+	url = git@github.com:explorexinc/elite.git
+	branch = phase01
+[submodule "tech/codebase/BE/customer_gateway"]
+	path = tech/codebase/BE/customer_gateway
+	url = git@github.com:explorexinc/customer_gateway.git
+	branch = stage
+[submodule "tech/codebase/BE/feed_svc"]
+	path = tech/codebase/BE/feed_svc
+	url = git@github.com:explorexinc/feed_svc.git
+	branch = stage
+[submodule "tech/codebase/BE/restaurant_catalog_svc"]
+	path = tech/codebase/BE/restaurant_catalog_svc
+	url = git@github.com:explorexinc/restaurant_catalog_svc.git
+	branch = stage
+[submodule "tech/codebase/BE/protos"]
+	path = tech/codebase/BE/protos
+	url = git@github.com:explorexinc/protos.git
+	branch = main
+[submodule "tech/codebase/BE/protos_dart"]
+	path = tech/codebase/BE/protos_dart
+	url = git@github.com:explorexinc/protos_dart.git
+	branch = main
