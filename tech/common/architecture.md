@@ -30,8 +30,9 @@ lib/
     curation/                # tab 4 + create-curation flow
     profile/
     feed_shared/             # widgets/blocs shared by home/experience/curation lists (the "post card")
-    auth/                    # phone + OTP, WhatsApp magic link, session, token refresh
+    auth/                    # phone + OTP, session, token refresh
     restaurant_detail/
+    pay/                     # Place Pay (typed amount; not dine-in / QSR)
     follows_blocks/
   domain/
     entities/                # freezed classes mirroring domain-model.md
@@ -60,10 +61,15 @@ single card, not the whole list, so reaction micro-animations stay cheap.
 ## Guest → authenticated session
 
 Per `product-requirements.md`'s 3-phase onboarding: `go_router` redirect logic gates
-routes that require identity (react, follow, create, profile) behind a lightweight
-"identity required" check, not a global auth wall — the public feed route stays reachable
-without a session. `AuthBloc` exposes a session state (`guest` / `phase1Named` /
-`authenticated`) that the router redirect reads.
+routes that require identity (create, my/new/edit curations, wallet, `/place-pay/:restaurantId`)
+behind a lightweight "identity required" check, not a global auth wall — the public feed
+route stays reachable without a session. Inline actions (react, follow, save, reserve, pay)
+still call `requireVerified` at the tap. `AuthBloc` exposes a session state (`guest` /
+`phase1Named` / `authenticated`) that the router redirect reads.
+
+Place profile's sticky bar is Reserve Table + Place Pay. Order-at-table is the top-right
+icon (scan with no visit, cart with one). Creating a curation pops back to the origin
+screen; My curations is only the destination when that is where Curate started.
 
 ## Testing
 

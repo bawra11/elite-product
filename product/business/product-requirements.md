@@ -88,14 +88,18 @@ Track these in `tech/common/domain-model.md` under "Unconfirmed" and revisit as 
 
 ## Decisions log
 
-- **2026-09-22 · Tabs.** We keep this brief's 5 tabs (Home · Experience · Create · Curation · Profile). The Claude Design prototype's nav (Home · Explore · Discovery · Profile) is **not** adopted. Explore is a candidate for a later phase inside Home or Search.
+- **2026-09-22 · Tabs.** We keep this brief's 5 tabs (Home · Experience · Create · Curation · Profile). The Claude Design prototype's nav (Home · Explore · Discovery · Profile) is **not** adopted. Explore is the same as search; it is not a fifth-tab replacement.
 - **2026-09-22 · Phase 2 auth is number-only.** The design supersedes "OTP + password": *"Your number, once. No password, no email, and we won't ask again."* It is triggered only when a guest reaches into an action tied to a real person (react, follow, post, reserve, pay). Browsing, Discovery, place profiles and experiences stay open.
 - **2026-09-22 · Phase 1 gains a tutorial.** After name + handle, a one-time 4-slide tutorial runs (Experience · Experience DNA · Curation · Discovery) before Home.
 - **2026-09-22 · Experience DNA** (working assumption). A restaurant-level hexagonal radar of what diners mention: Service, Food and Value always, then Vibe, Presentation and Convenience when mentioned. It appears only past 100 verified experiences, is never a rating, and never appears on an individual experience.
 - **2026-09-22 · Votes.** Both **Helpful** and **Not helpful** are shown on every experience (per the design). "Not helpful" assumes a `FEED_POST_REACTION_UNHELPFUL` wire value, which BE still needs to confirm.
 - **2026-09-26 · Post types.** Experience and curation are both BE post types on `feed_posts`. A restaurant story is the product name for the BE type happening.
-- **2026-09-26 · Auth.** Sign-in keeps phone number + OTP and the WhatsApp magic link (`PUT /dd/v1/whatsapp/login`). There is no password step.
+- **2026-09-26 · Auth.** Diner sign-in is phone number + OTP (WhatsApp may deliver the OTP). The diner phone sheet has no magic-link branch. `PUT /dd/v1/whatsapp/login` is the dine-in deep link only. There is no password step.
 - **2026-09-26 · Delete and edit.** The delete and edit actions are shown only when the signed-in diner is the post's author. feed_svc still does not enforce that on delete; the app must.
 - **2026-09-26 · Feeds.** Home mixes experiences, curations, and restaurant stories. The Experience and Curation tabs are that same list filtered by post type.
 - **2026-09-26 · Discovery.** Discovery is removed as a destination. Its UI is reused as the story viewer, opened from the circular bubbles at the top of Home.
 - **2026-09-26 · Empty states.** Where data is missing, the app shows an empty state. It does not ship demo discovery content.
+- **2026-09-26 · Place Pay.** From the place profile the diner types a bill amount, then a payment screen. This is not dine-in pay and not QSR pay. No captured API creates a visit from a typed amount, so the app does not fake success.
+- **2026-09-26 · Order at table.** A table QR deep link, or the place top-right icon (scan when there is no running order, cart when there is). Not a choice on Reserve.
+- **2026-09-26 · Curation origin.** Create, publish, and save return to the screen where Curate started. They do not always land on My curations or curation-detail.
+- **2026-09-26 · Elara later.** Ask Elara is in the prototype and is not a current tab. It will be added later.

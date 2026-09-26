@@ -98,6 +98,7 @@ groups below were rebuilt from the screen ids, and they follow the prototype's r
 | `pay-bill` | Pay bill | sa | `pay/…/pay_bill_screen.dart` |
 | `pay-mismatch` | Bill changed | sa | `pay/…/pay_bill_screen.dart` (state) |
 | `pay-receipt` | Receipt | sa | `pay/…/receipt_screen.dart` |
+| (not exported) | Place Pay (typed amount) | none | `pay/…/place_pay_screen.dart` |
 
 ## 10 · Curations (3)
 
@@ -119,7 +120,8 @@ groups below were rebuilt from the screen ids, and they follow the prototype's r
 
 The tab bar follows the product journal (Home · Experience · Create · Curation · Profile) and not the
 prototype's Home · Explore · Discovery · Profile. Discovery is removed as a destination; that UI is the
-story viewer for the circular bubbles on Home (2026-09-26). See `../README.md`.
+story viewer for the circular bubbles on Home (2026-09-26). Explore is search. Place Pay is a typed-amount
+path from the place profile, not `pay-bill`. See `../README.md`.
 
 ## Keeping this current
 

@@ -21,8 +21,11 @@ flowchart TD
   author -->|Yes| actions["Show delete and edit"]
   author -->|No| hide["Hide delete and edit"]
 
-  actions --> del["DELETE the post"]
-  actions --> editNote["Edit stays hidden until an edit route exists"]
+  actions --> confirmDel["Confirm delete"]
+  confirmDel --> del["DELETE the post"]
+  del -->|Fails| stay["Stay on detail with an error"]
+  actions --> editExp["Experience: existing create flow"]
+  actions --> editCur["Curation: existing edit route"]
 
   exp --> place["place-profile"]
   exp --> dish["dish-detail from a tagged dish"]
@@ -33,4 +36,6 @@ flowchart TD
 
 DNA is not drawn on an experience. The pre-audit export still links a DNA gem from `experience-detail`. The product rule is restaurant-only.
 
-Not helpful is shown in the product. The wire value `FEED_POST_REACTION_UNHELPFUL` is not confirmed in a capture. `FEED_POST_REACTION_INVALID` means there is no viewer. It is not a third button.
+Not helpful is shown in the product. The wire value is `FEED_POST_REACTION_UNHELPFUL`. `FEED_POST_REACTION_INVALID` means there is no viewer. It is not a third button.
+
+Delete is `DELETE /v1/feed_posts/{uuid}` and is wired for the author. Guests and other diners do not see it. Edit on a curation opens the existing curation editor. Edit on an experience reuses the create-experience flow; there is still no captured `PUT /v1/feed_posts/{uuid}` to persist an in-place edit.

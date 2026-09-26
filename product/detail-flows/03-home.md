@@ -1,18 +1,26 @@
 # Home
 
-Home is one list of experiences, curations, and restaurant stories. Helpful and Not helpful act on the card and do not open detail. Every other tap on a card opens detail.
+Home is one mixed list of three post types: experience, curation, and restaurant story. Helpful and Not helpful act on the card and do not open detail. Every other tap on a card opens detail.
 
-The circular bubbles at the top open the story viewer. That viewer is the Discovery UI. Discovery is not a tab and not a separate feed.
+At the top there is a curation row and other filtered modules (highlights, followed experiences, brand curation suggestions, place suggestions, brand promotions). Those modules come from separate calls with different arguments, not from the mixed list. The app will render unused brief-module slots in a later pass. They stay in this diagram.
+
+The circular bubbles at the top open a Discovery-like story viewer. That viewer can contain curations or restaurant stories, not only experiences. Discovery is not a tab and not a separate feed.
 
 ```mermaid
 flowchart TD
   home["home-list"] --> bubbles["Circular bubbles"]
-  home --> feed["Mixed feed"]
+  home --> modules["Curation row and other modules"]
+  home --> feed["Mixed feed: experience, curation, restaurant story"]
 
   bubbles --> viewer["Story viewer, Discovery UI"]
   viewer --> story["story-detail when the bubble is a restaurant story"]
+  viewer --> curFromRing["curation-detail when the bubble is a curation"]
   viewer --> place["place-profile"]
   viewer --> home
+
+  modules --> curFromRing
+  modules --> place
+  modules --> later["Unused brief-module slots, future render"]
 
   feed --> card{What was tapped?}
   card -->|Helpful or Not helpful| react["Update reaction in place"]
@@ -29,4 +37,4 @@ flowchart TD
 
 Empty, offline, and error states stay on Home. They do not swap in demo cards.
 
-Modules named in the brief (highlights, followed experiences, brand curation suggestions, place suggestions, brand promotions) are slots in this list. The export does not show them as separate screens. The brand-promotions slot opens the same place, offer, or brand curation as a WhatsApp promotion.
+The brand-promotions slot, once rendered, opens the same place, offer, or brand curation as a WhatsApp promotion.

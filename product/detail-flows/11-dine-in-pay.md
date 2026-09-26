@@ -6,7 +6,7 @@ This is not the QSR cart. Packaging charges belong to QSR.
 
 ```mermaid
 flowchart TD
-  entry["Place Pay bill, held reservation, table QR, or DD Pay Bill"] --> gate{Signed in?}
+  entry["Held reservation, table QR, or DD Pay Bill"] --> gate{Signed in?}
   gate -->|No| auth["Auth gate"]
   auth --> source
   gate -->|Yes| source{Which bill?}
