@@ -10,7 +10,8 @@ what they cover and where each screen lives in the Flutter app.
 - **Label** is the prototype's `data-screen-label`.
 - **Source** says which local export holds the screen. `main` = `Experience Diner App.dc.html` (post-audit,
   preferred), `sa` = `… standalone.dc.html` (pre-audit; apply the audit rules in `../README.md`).
-- **Flutter** is the implementing file under `tech/codebase/elite_app/lib/features/`.
+- **Flutter** is the implementing file under `tech/codebase/elite_app/lib/features/`. A path starting
+  with `dine_in/` is under `lib/dine_in/features/` instead (the dine-in module from phase01).
 
 The prototype's own flow grouping (its `flows` array) sits past the 256 KB export cutoff. The flow
 groups below were rebuilt from the screen ids, and they follow the prototype's rail order.
@@ -52,7 +53,7 @@ groups below were rebuilt from the screen ids, and they follow the prototype's r
 | `explore-landing` | Explore landing | main (cut off) / sa | `explore/…/explore_screen.dart` |
 | `explore-search` | Explore search results | sa | `explore/…/explore_results_screen.dart` |
 | `discovery` | Discovery feed | sa | UI reused as the Home story viewer (`story-view` from the circular bubbles). Not a tab or a feed. |
-| `curation-feed` | Curation Feed View | export only | not built |
+| `curation-feed` | Curation Feed View | export only | partial: `curation/…/curation_screen.dart` (Curation tab) is a plain list; the full-screen swipe viewer is being rebuilt |
 
 ## 5 · Content detail (3)
 
@@ -69,7 +70,7 @@ groups below were rebuilt from the screen ids, and they follow the prototype's r
 | `place-profile` | Place profile | sa | `restaurant_detail/…/restaurant_detail_screen.dart` |
 | `dna-sheet` | DNA sheet | sa | `restaurant_detail/…/dna_sheet.dart` |
 | `live-vibe` | Live Vibe | sa | `live/…/live_vibe_screen.dart` |
-| `live-menu` | Live Menu | sa | `live/…/live_menu_screen.dart` |
+| `live-menu` | Live Menu | sa | `dine_in/menu/…/live_menu_page.dart` |
 | `dish-detail` | Dish page | sa | `live/…/dish_detail_screen.dart` |
 
 ## 7 · Create experience (7)
@@ -95,9 +96,9 @@ groups below were rebuilt from the screen ids, and they follow the prototype's r
 
 | Screen id | Label | Source | Flutter |
 | --- | --- | --- | --- |
-| `pay-bill` | Pay bill | sa | `pay/…/pay_bill_screen.dart` |
-| `pay-mismatch` | Bill changed | sa | `pay/…/pay_bill_screen.dart` (state) |
-| `pay-receipt` | Receipt | sa | `pay/…/receipt_screen.dart` |
+| `pay-bill` | Pay bill | sa | `dine_in/digital_dinein/…/pay_bill_tab.dart` |
+| `pay-mismatch` | Bill changed | sa | not built (no bill-changed state in `pay_bill_tab.dart`) |
+| `pay-receipt` | Receipt | sa | `dine_in/payment/…/payment_status_page.dart` |
 | (not exported) | Place Pay (typed amount) | none | `pay/…/place_pay_screen.dart` |
 
 ## 10 · Curations (3)
