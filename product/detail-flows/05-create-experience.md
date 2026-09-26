@@ -27,6 +27,6 @@ flowchart TD
 
 Worth it is a boolean on the experience. It is not the Helpful reaction.
 
-A verified experience is one tied to a real visit and order. If the diner has no visit, the post is still allowed and stays unverified. Dish tags from the bill appear only when the visit is verified. There is no captured sample of that dish payload.
+A verified experience is one tied to a real visit and order. The visit step can be a reconciled payment, a bill photo still matching, a table QR, a waiter confirm, or no visit at all. That branch is [visit verification](./14-visit-verification.md). If the diner has no visit, the post is still allowed and stays unverified. Dish tags from the bill appear only when the visit is verified. There is no captured sample of that dish payload.
 
 `create-axis-edit` edits inferred axes on the experience. It does not show restaurant DNA.

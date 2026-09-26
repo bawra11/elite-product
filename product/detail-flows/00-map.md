@@ -33,7 +33,9 @@ flowchart TD
   place --> menu["Live menu"]
   menu --> dish["Dish"]
   place --> reserve["Reserve"]
-  place --> pay["Pay bill"]
+  place --> pay{"Pay"}
+  pay -->|Dine-in| dinePay["Table bill"]
+  pay -->|QSR| qsrPay["Cart"]
 
   detail --> react["Helpful or not helpful"]
   detail --> follow["Follow"]

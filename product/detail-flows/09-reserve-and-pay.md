@@ -1,29 +1,27 @@
-# Reserve and pay
+# Reserve, and which pay path
 
-Both start from a place and both need a signed-in diner. Guests hit the auth gate and come back to the same step.
+Reserve and pay both start from a place, and both need a signed-in diner. Pay then splits by service. Dine-in is a table bill. QSR is a cart.
 
 ```mermaid
 flowchart TD
   place["place-profile"] --> reserveTap["Reserve"]
-  place --> payTap["Pay bill"]
+  place --> payTap["Pay"]
 
   reserveTap --> gateR{Signed in?}
   gateR -->|No| authR["Auth gate"]
   authR --> reserve
   gateR -->|Yes| reserve["reserve"]
   reserve --> held["reserve-confirm"]
-  held --> place
+  held --> open["I'm at the table"]
+  open --> dine["Dine-in pay"]
+  held --> mismatch["Table mismatch report"]
 
   payTap --> gateP{Signed in?}
   gateP -->|No| authP["Auth gate"]
-  authP --> bill
-  gateP -->|Yes| bill["pay-bill"]
-  bill --> changed{Bill changed while paying?}
-  changed -->|Yes| mismatch["pay-mismatch, same screen"]
-  mismatch --> bill
-  changed -->|No| paid["Payment verified"]
-  paid --> receipt["pay-receipt"]
-  receipt --> place
+  authP --> mode
+  gateP -->|Yes| mode{Restaurant service?}
+  mode -->|Dine-in| dine
+  mode -->|QSR| qsr["QSR pay"]
 ```
 
-Reserve has no captured endpoint. Pay uses the stage payment init and verify routes from dine-in `main`. If either call fails, the screen stays on the bill with an error state, not a fake receipt.
+Reserve has no captured endpoint. The two pay paths are [dine-in](./11-dine-in-pay.md) and [QSR](./12-qsr-pay.md). A failed payment stays on the bill or the cart. It does not show a receipt.

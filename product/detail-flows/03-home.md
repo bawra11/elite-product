@@ -29,4 +29,4 @@ flowchart TD
 
 Empty, offline, and error states stay on Home. They do not swap in demo cards.
 
-Modules named in the brief (highlights, followed experiences, brand curation suggestions, place suggestions, brand promotions) are slots in this list. The export does not show them as separate screens.
+Modules named in the brief (highlights, followed experiences, brand curation suggestions, place suggestions, brand promotions) are slots in this list. The export does not show them as separate screens. The brand-promotions slot opens the same place, offer, or brand curation as a WhatsApp promotion.
