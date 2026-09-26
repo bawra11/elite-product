@@ -30,7 +30,7 @@ lib/
     curation/                # tab 4 + create-curation flow
     profile/
     feed_shared/             # widgets/blocs shared by home/experience/curation lists (the "post card")
-    auth/                    # OTP/password, session, token refresh
+    auth/                    # phone + OTP, WhatsApp magic link, session, token refresh
     restaurant_detail/
     follows_blocks/
   domain/
@@ -43,9 +43,10 @@ lib/
 ```
 
 Each `features/<x>/` follows `presentation/ (widgets, blocs) `— feature Blocs consume
-`domain/repositories` interfaces only, never `data/` directly, so unconfirmed-endpoint
-features (curation, restaurant story — see domain-model.md) can be built against a mock
-`repositories_impl` and swapped to the real one without touching UI/Bloc code.
+`domain/repositories` interfaces only, never `data/` directly, so a post type whose
+payload is not captured yet (happening / restaurant story — see domain-model.md) can
+be built against a mock `repositories_impl` and swapped to the real one without
+touching UI/Bloc code. Experience and curation already have stage payloads.
 
 ## Why feature-slice Blocs, not one global app state
 
