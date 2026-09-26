@@ -42,6 +42,9 @@ git -C Elite submodule foreach --quiet 'case $sm_path in tech/codebase/BE/*) git
 - **Before pushing this repo, run `/context-sync`** (`.claude/skills/context-sync/`). It refreshes the context
   docs, commits, stamps HEAD and pushes. `.claude/hooks/guard-push.sh` blocks a push of an unsynced HEAD.
 - QA agents: `/sim-qa` (iOS simulator), `/web-qa` (Chrome).
+- Cloud Agents: `.cursor/environment.json` checks out `elite_app`, installs the FVM-pinned Flutter
+  SDK, runs codegen and serves the app as Flutter web (port 3000). Needs read access to the
+  `explorexinc` submodule repos, declared via `repositoryDependencies`.
 
 Current focus: active development and testing of the Flutter frontend
 (`tech/codebase/elite_app`) against the existing stage backend documented in
