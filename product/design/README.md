@@ -7,7 +7,9 @@
   (`_ds/elite-experience-designsystem-1d6068ae-…` inside that project)
 - **Access:** through the `DesignSync` tool after `/design-login` in Claude Code.
 
-What's here locally: `claude-design/` (see its README). The Figma file the system was built
+What's here locally: `claude-design/` holds the prototype exports (see its README). `mockups/` has the
+screens & flows scope, each screen mapped to its Flutter file. `legacy-pack/` is the July 2026 design pack
+for the old app. The Figma file the system was built
 from (`Experience DNA.fig`) is referenced by the design system but is not needed. Every
 token and rule we use is in the Claude Design project.
 
