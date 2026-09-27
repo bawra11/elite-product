@@ -42,7 +42,7 @@ git -C Elite submodule foreach --quiet 'case $sm_path in tech/codebase/BE/*) git
   and the push hook blocks `git push` from there. Pull to refresh; record contract drift in `tech/common/`.
 - **Before pushing this repo, run `/context-sync`** (`.claude/skills/context-sync/`). It refreshes the context
   docs, commits, stamps HEAD and pushes. `.claude/hooks/guard-push.sh` blocks a push of an unsynced HEAD.
-- QA agents: `/sim-qa` (iOS simulator), `/web-qa` (Chrome).
+- QA agents: `/diner-qa` (eight personas on iPhone 17 and elite_pixel), `/sim-qa` (iOS simulator), `/web-qa` (Chrome).
 
 Current focus: active development and testing of the Flutter frontend
 (`tech/codebase/elite_app`) against the existing stage backend documented in

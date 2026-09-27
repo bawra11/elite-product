@@ -9,3 +9,4 @@ This root folder is the product repo `git@github.com:bawra11/elite-product.git`.
   first, then stage the new submodule pointer here.
 - **Before any push of this repo, run the `context-sync` skill.** The push hook refuses otherwise.
 - Designed screens and flows: `product/design/mockups/README.md`. Frontend flowcharts: `product/detail-flows/`.
+- Multi-diner QA: `/diner-qa` (`.cursor/skills/diner-qa/SKILL.md`). Relay OTP; do not walk the catalog yourself.
