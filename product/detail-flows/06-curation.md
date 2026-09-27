@@ -21,10 +21,9 @@ flowchart TD
   add -->|Save or publish| back["Return to origin"]
   mine -->|Save or publish from an edit| mine
 
-  detail -->|Author| edit["Edit restaurants or text"]
-  edit --> add
+  detail -->|Author| edit["Delete; edit once BE has an update route"]
   detail -->|Anyone else| read["Read only"]
   detail --> place["place-profile of a member restaurant"]
 ```
 
-From an experience, `create-curation-pick` adds that place to an existing curation or starts one, then returns to that experience. Delete and edit on the curation show only for the author.
+From an experience, `create-curation-pick` adds that place to an existing curation or starts one, then returns to that experience. Delete on the curation shows only for the author. Edit on a published curation waits for BE's update route; drafts stay editable in My curations, which keeps drafts and the curations published from this device across restarts.
