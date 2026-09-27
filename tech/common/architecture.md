@@ -67,6 +67,16 @@ route stays reachable without a session. Inline actions (react, follow, save, re
 still call `requireVerified` at the tap. `AuthBloc` exposes a session state (`guest` /
 `phase1Named` / `authenticated`) that the router redirect reads.
 
+`requireVerified` waits on a ticket the auth flow closes, not on the pushed route's result:
+signing in refreshes the router, and go_router rebuilds a pushed route on a refresh, which
+orphaned the awaited push (the action never resumed after the gate).
+
+The diner's own publishes and deletes go out on `FeedChanges` (announced by the feed
+repository). Home, its curation rail and My curations listen, so a new post is on Profile at
+once and a deleted curation leaves every list. Curation drafts and the curations published
+from the device are kept in a Hive box (stage has no draft or "my posts" endpoint). Edit on
+posts is hidden until feed_svc has an update route.
+
 Place profile's sticky bar is Reserve Table + Place Pay. Order-at-table is the top-right
 icon (scan with no visit, cart with one). Creating a curation pops back to the origin
 screen; My curations is only the destination when that is where Curate started.
