@@ -250,8 +250,8 @@ PUT /v1/feed_posts/{uuid}/reaction
 
 Same endpoint, `"reaction":"FEED_POST_REACTION_NONE"` clears the viewer's reaction.
 
-> Only `HELPFUL` and `NONE` appear in either capture. The app sends
-> `FEED_POST_REACTION_UNHELPFUL` for "Not helpful", which is **still unconfirmed** (docs/issues.md M6).
+> `FEED_POST_REACTION_UNHELPFUL` is the confirmed wire value for "Not helpful" (2026-10-01).
+> The captures in this file still only show `HELPFUL` and `NONE`.
 
 ---
 
@@ -424,7 +424,7 @@ app tree was not changed.
    (`lib/core/constants/api_endpoints.dart`). The public ones returned HTTP 200 on stage
    with `x-api-token`. They speak proto3 JSON (`dd/v1/...`), so each needs its own DTO.
 
-Auth on phase01 is phone number + OTP, or WhatsApp magic link (`PUT /dd/v1/whatsapp/login`). No password route.
+General diner sign-in on phase01 is phone number + OTP (`POST /dd/v1/authentication/otps`, `PUT /dd/v1/login/otp`). The WhatsApp magic link (`PUT /dd/v1/whatsapp/login`) is a sign-in method, and it is the forced (preferred) sign-in for dine-in and paid-QSR, so BE can use WhatsApp's customer-service window to message the user on WhatsApp. It is not a general diner sign-in option. No password route. The OTP is 6 digits for now. That length is the current value from the OTP provider and may change, so clients must not hard-code it.
 
 | Source | Endpoint | Method | Auth |
 |---|---|---|---|
@@ -485,7 +485,6 @@ Not in §1–21 and not in dine-in `main` @ `b971951`. The app shows an empty st
 | Restaurants | Live Vibe | `/restaurant/:id/vibe` empty |
 | Restaurants | Reserve a table | Toast |
 | Feed | Guest-readable single post | `GET` §8 requires a JWT |
-| Feed | `FEED_POST_REACTION_UNHELPFUL` confirmed | Sent as-is |
 | Feed | Edit route (`PUT /v1/feed_posts/{uuid}`) | Edit hidden except for the author, and the route is not captured |
 | Feed | Drafts, report-post | In-memory drafts; no report |
 | Feed | Search must hide soft-deleted posts | §21 bug |

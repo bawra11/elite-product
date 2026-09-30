@@ -28,7 +28,7 @@ Delete and edit render only when the signed-in diner's URN matches `author_urn`
 | `post_type` | enum | `FEED_POST_TYPE_EXPERIENCE` and `FEED_POST_TYPE_CURATION` confirmed. Happening is the BE name for a restaurant story: `FEED_POST_TYPE_HAPPENING` (protos `feedsvc.proto`), with `payload.happening` `{restaurant_id, starts_at, ends_at}` |
 | `payload` | oneof by `post_type` | `{experience: ExperiencePayload}` and `{curation: CurationPayload}` confirmed |
 | `title`, `body` | string | can be empty strings on draft/incomplete posts |
-| `viewer_reaction` | enum | `FEED_POST_REACTION_HELPFUL` \| `FEED_POST_REACTION_NONE` \| `FEED_POST_REACTION_INVALID` (INVALID = no viewer identity, i.e. anonymous) |
+| `viewer_reaction` | enum | `FEED_POST_REACTION_HELPFUL` \| `FEED_POST_REACTION_UNHELPFUL` \| `FEED_POST_REACTION_NONE` \| `FEED_POST_REACTION_INVALID` (INVALID = no viewer identity, i.e. anonymous). `FEED_POST_REACTION_UNHELPFUL` is the confirmed wire value for "Not helpful" (2026-10-01) |
 | `viewer_follows_author` | bool | |
 
 ### `FeedPostMetaData`
@@ -115,7 +115,7 @@ seam), but keep their data sources behind a repository interface that can be poi
 mock until a capture exists:
 
 - **`RestaurantStory`** — product name for the BE post type happening. `{uuid, restaurant, photos[], dishTags[], offers[], actions[], tags[], body}`, plus `starts_at` / `ends_at` (`ends_at` ≥ `starts_at`). Same `feed_posts` routes as experience and curation. No sample body yet.
-- **Onboarding phase-1** (`name` + `username` claim) is local until a profile write lands. **Phase-2** is phone number + OTP (`POST /dd/v1/authentication/otps`, `PUT /dd/v1/login/otp`) or WhatsApp magic link (`PUT /dd/v1/whatsapp/login`). No password.
+- **Onboarding phase-1** (`name` + `username` claim) is local until a profile write lands. General phase-2 sign-in is phone number + OTP only (`POST /dd/v1/authentication/otps`, `PUT /dd/v1/login/otp`). No password. The WhatsApp magic link is not a general phase-2 option; see the auth note below.
 
 ## Numeric encoding gotchas (apply across the whole API)
 
@@ -144,11 +144,12 @@ when the real API lands.
 - `RestaurantStory`: restaurant-authored happening, with media, dish tags and an offer.
 - `StoryRing`: the Home stories rail, one ring per restaurant. Until BE ships a stories endpoint, phase01 fills it from happening posts on feed search (placeholder).
 
-**Reaction enum addition:** `ViewerReaction.unhelpful` ↔ `FEED_POST_REACTION_UNHELPFUL`. This is
-inferred from `unhelpful_count` and must be confirmed with BE.
-
-**Auth is phone number + OTP, or WhatsApp magic link.** Stage has
+**Auth.** General diner sign-in is phone number + OTP. The WhatsApp magic link
+(`PUT /dd/v1/whatsapp/login`) is a sign-in method, and it is the forced (preferred)
+sign-in for dine-in and paid-QSR, so BE can use WhatsApp's customer-service window to
+message the user on WhatsApp. It is not a general diner sign-in option. Stage has
 `POST /dd/v1/authentication/otps`, `PUT /dd/v1/login/otp`, and `PUT /dd/v1/whatsapp/login`.
 phase01 keeps all three. There is no password endpoint. Handle availability is still
-missing. Every build signs in through `DineInOtpAuthRepository` (6-digit WhatsApp OTP).
-There is no stub, test code, or refresh-token bypass.
+missing. The OTP is 6 digits for now. That length is the current value from the OTP
+provider and may change, so clients must not hard-code it. Every build signs in through
+`DineInOtpAuthRepository`. There is no stub, test code, or refresh-token bypass.

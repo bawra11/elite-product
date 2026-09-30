@@ -124,6 +124,8 @@ prototype's Home · Explore · Discovery · Profile. Discovery is removed as a d
 story viewer for the circular bubbles on Home (2026-09-26). Explore is search. Place Pay is a typed-amount
 path from the place profile, not `pay-bill`. See `../README.md`.
 
+Live Menu is open to guests. Live Vibe needs sign-in (2026-10-01). The `auth-gate` copy no longer lists Live Menu with Live Vibe. The `auth-otp` screen says the code length is set by the OTP provider (6 for now) and is never fixed. The basic user profile view is not gated, but any private information or analytics on the profile is gated behind sign-in.
+
 ## Keeping this current
 
 `/context-sync` refreshes this table before every push of the product repo. When a new Claude

@@ -1,20 +1,23 @@
 # Profile, follow, and block
 
-Profile is the signed-in diner. A guest who opens the tab sees a guest Profile with "Verify my number", which opens `auth-phone` directly. Analysis is computed from the diner's own experiences: the share they called Worth it, how many diners found them helpful, and their most frequent tags. With no experiences it is an empty state.
+The basic user profile view is not gated, but any private information or analytics on the profile is gated behind sign-in. This note does not decide which fields count as private.
+
+A guest who opens the tab sees the basic profile. "Verify my number" opens `auth-phone` for the gated parts. Analysis is analytics: the share they called Worth it, how many diners found them helpful, and their most frequent tags. With no experiences it is an empty state. Analysis is gated.
 
 ```mermaid
 flowchart TD
-  tab["Profile tab"] --> gate{Signed in?}
-  gate -->|No| guestProfile["Guest profile"]
-  guestProfile -->|Verify my number| auth["auth-phone"]
-  auth --> profile
-  gate -->|Yes| profile["profile"]
+  tab["Profile tab"] --> basic["Basic profile view"]
+  basic --> details["Public fields; membership fields are not classified here"]
+  basic --> private["Private information, gated"]
+  basic --> analysis["Analytics, gated"]
+  private --> gate{Signed in?}
+  analysis --> gate
+  gate -->|No| auth["auth-phone"]
+  auth --> shown["Private information or analytics"]
+  gate -->|Yes| shown
+  shown --> metrics["Worth it share, helpful count, top tags; empty with no experiences"]
 
-  profile --> details["Public, private, and membership fields"]
-  profile --> analysis["Analysis"]
-  analysis --> metrics["Worth it share, helpful count, top tags; empty with no experiences"]
-
-  profile --> sub{Sub-tab?}
+  basic --> sub{Sub-tab?}
   sub -->|Experiences| mineExp["This diner's experiences"]
   sub -->|Curations| mineCur["This diner's curations"]
   mineExp --> exp["experience-detail"]
