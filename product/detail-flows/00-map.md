@@ -14,6 +14,8 @@ The basic user profile view is not gated. Any private information or analytics o
 
 Live Menu is open to guests. Live Vibe needs sign-in.
 
+After phone OTP, a gate action shows Complete profile. Otherwise the tour runs when this device has not seen it. A reinstall may show the tour again. No server flag. Superseded 2026-10-01: the tour ran on the first verification of the account.
+
 ```mermaid
 flowchart TD
   launch([Open app]) --> known{Named on this device?}
@@ -76,9 +78,12 @@ flowchart TD
   dineIn --> wa{Signed in?}
   wa -->|Yes| back
   wa -->|No| magic["WhatsApp magic link"]
-  magic --> tour
-  auth --> tour{First verification?}
-  tour -->|Yes| phase3["Network tour, once"]
-  tour -->|No| back
+  magic --> seen{Tour seen on this device?}
+  auth --> gated{Gate action?}
+  gated -->|Yes| complete["Complete profile"]
+  gated -->|No| seen
+  seen -->|No| phase3["Network tour"]
+  seen -->|Yes| back
+  complete --> back
   phase3 --> back
 ```
