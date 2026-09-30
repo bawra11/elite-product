@@ -8,6 +8,10 @@ The OTP is 6 digits for now. That length is the current value from the OTP provi
 
 The gate opens only for an action tied to a person: react, follow, post, reserve, pay, and Live Vibe. Live Menu is open to guests. The gate opens as a sheet over the screen the diner was on, and tapping outside it keeps browsing. The basic user profile view is not gated, but any private information or analytics on the profile is gated behind sign-in.
 
+After OTP verification, if the guest took an action that triggered the gate, show Complete profile. Otherwise show the tour. The tour-seen flag stays on the device. A reinstall may show the tour again. No server flag. Superseded 2026-10-01: the next step was the phase 3 tour on the first verification of the account.
+
+On `auth-name`, the handle availability check is pending from BE. Once it exists, a handle that already exists shows "Already have an account? Sign in". The handle issue is expected to go away once it ships. No path is named for the check.
+
 ```mermaid
 flowchart TD
   action["Identity action"] --> session{Session?}
@@ -18,9 +22,12 @@ flowchart TD
   phone -->|Send OTP| otp["auth-otp"]
   otp -->|Change number| phone
   otp -->|Code accepted| verified["auth-verified"]
-  verified --> first{First verification on this account?}
-  first -->|Yes| tour["Phase 3 tour, once"]
-  first -->|No| go
+  verified --> gated{Action opened the gate?}
+  gated -->|Yes| profile["Complete profile"]
+  gated -->|No| seen{Tour seen on this device?}
+  seen -->|No| tour["Phase 3 tour"]
+  seen -->|Yes| go
+  profile --> go
   tour --> go
 ```
 

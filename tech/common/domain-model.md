@@ -115,7 +115,12 @@ seam), but keep their data sources behind a repository interface that can be poi
 mock until a capture exists:
 
 - **`RestaurantStory`** — product name for the BE post type happening. `{uuid, restaurant, photos[], dishTags[], offers[], actions[], tags[], body}`, plus `starts_at` / `ends_at` (`ends_at` ≥ `starts_at`). Same `feed_posts` routes as experience and curation. No sample body yet.
-- **Onboarding phase-1** (`name` + `username` claim) is local until a profile write lands. General phase-2 sign-in is phone number + OTP only (`POST /dd/v1/authentication/otps`, `PUT /dd/v1/login/otp`). No password. The WhatsApp magic link is not a general phase-2 option; see the auth note below.
+- **Onboarding phase-1** (`name` + `username` claim) is local until a profile write lands. General phase-2 sign-in is phone number + OTP only (`POST /dd/v1/authentication/otps`, `PUT /dd/v1/login/otp`). No password. The WhatsApp magic link is not a general phase-2 option; see the auth note below. The handle availability check is pending from BE. The handle issue is expected to go away once it ships. No path is captured.
+The next three notes are 2026-10-01 decisions. They close former open questions and do not add entities or fields.
+
+- **Phase 3 tour-seen** stays on the device. A reinstall may show the tour again. No server flag, and no field is named for one.
+- **Guest drafts** have no server copy. Server drafts for signed-in users come later. No draft route is named.
+- **Follow and reaction repeat.** Those calls may not be safe to repeat. Duplicates are tolerated for now. Idempotency is not confirmed, and no new field is named.
 
 ## Numeric encoding gotchas (apply across the whole API)
 
@@ -150,6 +155,10 @@ sign-in for dine-in and paid-QSR, so BE can use WhatsApp's customer-service wind
 message the user on WhatsApp. It is not a general diner sign-in option. Stage has
 `POST /dd/v1/authentication/otps`, `PUT /dd/v1/login/otp`, and `PUT /dd/v1/whatsapp/login`.
 phase01 keeps all three. There is no password endpoint. Handle availability is still
-missing. The OTP is 6 digits for now. That length is the current value from the OTP
-provider and may change, so clients must not hard-code it. Every build signs in through
-`DineInOtpAuthRepository`. There is no stub, test code, or refresh-token bypass.
+missing. The check is pending from BE (2026-10-01), and the handle issue is expected to
+go away once it ships. No endpoint is named. The OTP is
+6 digits for now. That length is the current value from the OTP provider and may change,
+so clients must not hard-code it. Every build signs in through
+`DineInOtpAuthRepository`. There is no stub, test code, or refresh-token bypass. After
+OTP verification, a gated action shows Complete profile. Otherwise the tour runs. The
+tour-seen flag stays on the device.

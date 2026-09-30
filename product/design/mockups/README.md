@@ -126,6 +126,8 @@ path from the place profile, not `pay-bill`. See `../README.md`.
 
 Live Menu is open to guests. Live Vibe needs sign-in (2026-10-01). The `auth-gate` copy no longer lists Live Menu with Live Vibe. The `auth-otp` screen says the code length is set by the OTP provider (6 for now) and is never fixed. The basic user profile view is not gated, but any private information or analytics on the profile is gated behind sign-in.
 
+After OTP, `auth-verified` sends a gate action to Complete profile (`auth-profile-30`). Otherwise it shows the tour. The tour-seen flag stays on the device, and a reinstall may show the tour again. Superseded 2026-10-01: the verified screen always offered a return to the action, with "Complete my profile instead" as the optional path. On `auth-name`, the handle check is still pending. Once it exists, a taken handle shows "Already have an account? Sign in".
+
 ## Keeping this current
 
 `/context-sync` refreshes this table before every push of the product repo. When a new Claude
