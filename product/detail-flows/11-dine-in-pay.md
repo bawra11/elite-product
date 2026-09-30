@@ -4,10 +4,12 @@ Dine-in is a table session. Staff open the bill on Bridge, and the diner pays th
 
 This is not the QSR cart. Packaging charges belong to QSR.
 
+Sign-in on this flow is the WhatsApp magic link, the forced (preferred) sign-in for dine-in, so BE can use WhatsApp's customer-service window to message the user.
+
 ```mermaid
 flowchart TD
   entry["Held reservation, table QR, or DD Pay Bill"] --> gate{Signed in?}
-  gate -->|No| auth["Auth gate"]
+  gate -->|No| auth["WhatsApp magic link"]
   auth --> source
   gate -->|Yes| source{Which bill?}
 

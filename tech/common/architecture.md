@@ -61,9 +61,9 @@ single card, not the whole list, so reaction micro-animations stay cheap.
 ## Guest → authenticated session
 
 Per `product-requirements.md`'s 3-phase onboarding: `go_router` redirect logic gates
-routes that require identity (create, my/new/edit curations, wallet, `/place-pay/:restaurantId`)
+routes that require identity (create, my/new/edit curations, wallet, `/place-pay/:restaurantId`, Live Vibe)
 behind a lightweight "identity required" check, not a global auth wall — the public feed
-route stays reachable without a session. Inline actions (react, follow, save, reserve, pay)
+route stays reachable without a session, and Live Menu stays open to guests. Inline actions (react, follow, save, reserve, pay)
 still call `requireVerified` at the tap. `AuthBloc` exposes a session state (`guest` /
 `phase1Named` / `authenticated`) that the router redirect reads.
 

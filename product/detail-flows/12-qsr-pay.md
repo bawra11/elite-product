@@ -4,16 +4,18 @@ QSR is counter service. The restaurant `qsr` config names a floor area and a pac
 
 SkipQ is the QSR app on the same gateway (`skip_q_routes.go`). Its session is a `skip_q_users` identity, not a diner user. The Claude Design export has no SkipQ, cart, or order-status screen.
 
+For the Elite diner, paid-QSR sign-in is the WhatsApp magic link, the forced (preferred) sign-in, so BE can use WhatsApp's customer-service window to message the user. SkipQ keeps its `skip_q_users` session. TODO: no paid-QSR magic-link entry path is captured, so this note does not name one.
+
 ```mermaid
 flowchart TD
   entry["QSR place or SkipQ QR"] --> app{Which app?}
   app -->|Elite, at a QSR place| diner["Diner session"]
   app -->|SkipQ| skip["skip_q_users session"]
   diner --> gate{Signed in?}
-  skip --> gate
-  gate -->|No| auth["Auth gate"]
+  gate -->|No| auth["WhatsApp magic link"]
   auth --> menu
   gate -->|Yes| menu["Menu"]
+  skip --> menu
 
   menu --> add["Add items"]
   add --> cart["Cart"]

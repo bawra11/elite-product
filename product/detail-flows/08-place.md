@@ -1,12 +1,12 @@
 # Place
 
-Place profile is open to guests. Reserve, Place Pay, and order-at-table ask for identity. DNA opens only when the restaurant has more than 100 verified experiences. Below that, the sheet is not offered.
+Place profile is open to guests. Live Menu is open to guests. Live Vibe needs sign-in. Reserve, Place Pay, and order-at-table ask for identity. DNA opens only when the restaurant has more than 100 verified experiences. Below that, the sheet is not offered.
 
 Place Pay is a different flow from dine-in pay and from QSR pay. Do not collapse them.
 
 Reserve Table shows only the reserve option. Order-at-table is not a choice on that entry.
 
-Order at table starts from a table-QR deep link, or from the top-right icon on the place screen: a scan icon when there is no running order, a cart icon when there is (opens the running order).
+Order at table starts from a table-QR deep link, or from the top-right icon on the place screen: a scan icon when there is no running order, a cart icon when there is (opens the running order). That dine-in sign-in is the WhatsApp magic link.
 
 ```mermaid
 flowchart TD
@@ -17,10 +17,13 @@ flowchart TD
   dnaCheck -->|No| noDna["No DNA control"]
   dna --> place
 
-  place --> vibe["live-vibe"]
+  place --> vibeGate{Signed in?}
+  vibeGate -->|No| vibeAuth["Auth gate"]
+  vibeAuth --> vibe["live-vibe"]
+  vibeGate -->|Yes| vibe
   vibe --> emptyVibe["Empty state when live vibe has no endpoint"]
 
-  place --> menu["live-menu"]
+  place --> menu["live-menu, open to guests"]
   menu --> dish["dish-detail"]
   dish --> place
 

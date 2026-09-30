@@ -2,6 +2,8 @@
 
 Phase 1 does not ask for a phone number. The tutorial runs once, before Home. Each tutorial slide in the prototype can skip to Home.
 
+The handle availability check is pending from BE. The handle issue is expected to go away once it ships. Once that check exists, a typed handle that already exists shows "Already have an account? Sign in" on `auth-name`. Until then that CTA is not shown. No path is named for the check.
+
 ```mermaid
 flowchart TD
   start([First launch]) --> name["auth-name: name and handle"]
@@ -18,19 +20,24 @@ flowchart TD
 
 After Home, the diner is a named guest. Browsing, place profiles, and reading experiences stay open.
 
-## Phase 3, after the first successful sign-in
+## Phase 3, after OTP verification
 
-No screen in the design export covers this tour. It is shown once, not on later logins.
+No screen in the design export covers this tour. The tour-seen flag stays on the device. A reinstall may show the tour again. No server flag.
+
+Superseded 2026-10-01: "Phase 3, after the first successful sign-in" and "It is shown once, not on later logins." The old diagram always opened the tour, with Complete profile as an optional branch off `auth-verified`.
 
 ```mermaid
 flowchart TD
-  verified["auth-verified"] --> tour["Network tour"]
+  verified["auth-verified"] --> gated{Action opened the gate?}
+  gated -->|Yes| p30["Complete profile: auth-profile-30"]
+  gated -->|No| seen{Tour seen on this device?}
+  seen -->|Yes| done([Return to where sign-in started])
+  seen -->|No| tour["Network tour"]
   tour --> showProfile["Show the diner profile"]
   showProfile --> suggest["Suggested establishments to follow"]
   suggest --> community["Create your own community"]
   community --> invite["Invite friends"]
-  invite --> done([Return to the action that asked for identity])
-  verified -->|Complete profile instead| p30["auth-profile-30"]
+  invite --> done
   p30 --> p100["auth-profile-100"]
   p100 --> done
 ```

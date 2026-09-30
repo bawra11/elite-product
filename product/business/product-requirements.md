@@ -36,19 +36,19 @@ All three live in a unified content system referred to as **posts** (see `feed_p
 
 ## Reactions & social graph
 
-- Reaction on a post: `reaction` field (not `reaction_type`), enum includes `FEED_POST_REACTION_HELPFUL`, `FEED_POST_REACTION_NONE`, `FEED_POST_REACTION_INVALID`. This is a "helpful / not helpful" style signal on the post itself, distinct from the experience's own `worth_it` boolean.
-- **Follow** system: `follow_type` enum — `FOLLOW_TYPE_RESTAURANT`, `FOLLOW_TYPE_USER`, `FOLLOW_TYPE_BRAND`. Users can follow restaurants, other users, and brands.
+- Reaction on a post: `reaction` field (not `reaction_type`), enum includes `FEED_POST_REACTION_HELPFUL`, `FEED_POST_REACTION_UNHELPFUL`, `FEED_POST_REACTION_NONE`, `FEED_POST_REACTION_INVALID`. `FEED_POST_REACTION_UNHELPFUL` is the confirmed wire value for "Not helpful". This is a "helpful / not helpful" style signal on the post itself, distinct from the experience's own `worth_it` boolean.
+- **Follow** system: `follow_type` enum — `FOLLOW_TYPE_RESTAURANT`, `FOLLOW_TYPE_USER`, `FOLLOW_TYPE_BRAND`. Users can follow restaurants, other users, and brands. Follow and reaction calls may not be safe to repeat. Duplicates are tolerated for now (2026-10-01).
 - **Block** system: user-to-user blocking (`blocked_user_urn`).
 
 ## Onboarding — three phases
 
 Phase boundaries matter: phase 1 is frictionless (no auth), phases 2–3 require the user to opt in.
 
-1. **Who is the user?** — First launch. Ask only for name + username. User is immediately dropped into the Home feed to explore, unauthenticated. No gate.
-2. **User's credentials** — Sign-in is phone number and OTP, or a WhatsApp magic link. No password, no email. It is *user-initiated*, triggered whenever the user tries to take an action that needs an identity (react, follow, post, etc.), not forced up front.
-3. **Building initial network** — One-time tour shown immediately after first successful verification: show the user's profile, suggested establishments to follow, "create your own community" CTA, and "invite friends." Shown once, not repeated on subsequent logins.
+1. **Who is the user?** — First launch. Ask only for name + username. User is immediately dropped into the Home feed to explore, unauthenticated. No gate. The handle availability check is pending from BE. The handle issue is expected to go away once it ships. Once that check exists, a handle that already exists shows "Already have an account? Sign in". No path is named for the check.
+2. **User's credentials** — General diner sign-in is phone number and OTP. The WhatsApp magic link is a sign-in method, and it is the forced (preferred) sign-in for dine-in and paid-QSR, so BE can use WhatsApp's customer-service window to message the user on WhatsApp. It is not a general sign-in option. No password, no email. Outside those flows it is *user-initiated*, triggered when the user takes an action that needs an identity (react, follow, post, and so on), not forced up front. The OTP is 6 digits for now. That length is the current value from the OTP provider and may change, so clients must not hard-code it. After OTP verification, if the guest took an action that triggered the gate, show Complete profile. Otherwise show the tour.
+3. **Building initial network** — After OTP verification, the tour runs when no gated action led there: the user's profile, suggested establishments to follow, "create your own community," and "invite friends." The tour-seen flag stays on the device. A reinstall may show the tour again. No server flag. Superseded 2026-10-01: "One-time tour shown immediately after first successful verification… Shown once, not repeated on subsequent logins."
 
-Design implication: the app must support a **guest/anonymous session** that can browse the public feed (see `v1/public/feed_posts`, which needs only `X-API-TOKEN`, no user JWT) and a **soft upgrade path** into phases 2–3 triggered contextually.
+Design implication: the app must support a **guest/anonymous session** that can browse the public feed (see `v1/public/feed_posts`, which needs only `X-API-TOKEN`, no user JWT) and a **soft upgrade path** into phases 2–3 triggered contextually. Guests get no server drafts. Server drafts for signed-in users come later.
 
 ## Navigation — 5 tabs
 
@@ -64,9 +64,9 @@ Design implication: the app must support a **guest/anonymous session** that can 
 2. **Experience** (tab 2) — same list UI as Home, filtered to `post_type: EXPERIENCE` only.
 3. **Create** (tab 3) — not a screen, a CTA/action sheet: "create Experience" or "create Curation."
 4. **Curation** (tab 4) — same list UI as Home, filtered to curations only.
-5. **Profile** (tab 5) — current user's profile:
-   - User details (public fields, private fields, dynamic/semi-dynamic fields e.g. membership status, visit stats)
-   - Analysis (personal stats/insights — exact metrics TBD)
+5. **Profile** (tab 5) — current user's profile. The basic user profile view is not gated, but any private information or analytics on the profile is gated behind sign-in.
+   - User details (public fields, private fields, dynamic/semi-dynamic fields e.g. membership status, visit stats). Private fields are gated. This list does not decide which dynamic fields are private.
+   - Analysis (personal stats/insights — exact metrics TBD) is analytics and is gated behind sign-in.
    - Two sub-tabs: **Experiences** and **Curations** created by this user.
 
 ## Non-negotiables
@@ -82,7 +82,7 @@ Design implication: the app must support a **guest/anonymous session** that can 
 - Happening (restaurant story) request body. The type is confirmed; a captured payload is not.
 - "Analysis" tab content on profile — which metrics.
 - Push notification strategy.
-- Exact anonymous→authenticated session handoff (merging guest feed state into authenticated state).
+- Exact anonymous→authenticated session handoff (merging guest feed state into authenticated state). Superseded in part 2026-10-01: the tour-seen flag stays on the device; follow and reaction duplicates are tolerated for now; guests get no server drafts (signed-in server drafts come later); the handle availability check is pending from BE; after OTP, a gated action shows Complete profile and otherwise the tour; once that check exists, a taken handle shows "Already have an account? Sign in". Merging the rest of the guest feed state is still open.
 
 Track these in `tech/common/domain-model.md` under "Unconfirmed" and revisit as BE ships more of the curl reference.
 
@@ -92,9 +92,9 @@ Track these in `tech/common/domain-model.md` under "Unconfirmed" and revisit as 
 - **2026-09-22 · Phase 2 auth is number-only.** The design supersedes "OTP + password": *"Your number, once. No password, no email, and we won't ask again."* It is triggered only when a guest reaches into an action tied to a real person (react, follow, post, reserve, pay). Browsing, Discovery, place profiles and experiences stay open.
 - **2026-09-22 · Phase 1 gains a tutorial.** After name + handle, a one-time 4-slide tutorial runs (Experience · Experience DNA · Curation · Discovery) before Home.
 - **2026-09-22 · Experience DNA** (working assumption). A restaurant-level hexagonal radar of what diners mention: Service, Food and Value always, then Vibe, Presentation and Convenience when mentioned. It appears only past 100 verified experiences, is never a rating, and never appears on an individual experience.
-- **2026-09-22 · Votes.** Both **Helpful** and **Not helpful** are shown on every experience (per the design). "Not helpful" assumes a `FEED_POST_REACTION_UNHELPFUL` wire value, which BE still needs to confirm.
+- **2026-09-22 · Votes.** Both **Helpful** and **Not helpful** are shown on every experience (per the design). "Not helpful" assumes a `FEED_POST_REACTION_UNHELPFUL` wire value, which BE still needs to confirm. Superseded 2026-10-01: that wire value is confirmed.
 - **2026-09-26 · Post types.** Experience and curation are both BE post types on `feed_posts`. A restaurant story is the product name for the BE type happening.
-- **2026-09-26 · Auth.** Diner sign-in is phone number + OTP (WhatsApp may deliver the OTP). The diner phone sheet has no magic-link branch. `PUT /dd/v1/whatsapp/login` is the dine-in deep link only. There is no password step.
+- **2026-09-26 · Auth.** Diner sign-in is phone number + OTP (WhatsApp may deliver the OTP). The diner phone sheet has no magic-link branch. `PUT /dd/v1/whatsapp/login` is the dine-in deep link only. There is no password step. Superseded 2026-10-01: the magic link is the forced (preferred) sign-in for dine-in and paid-QSR, so BE can use WhatsApp's customer-service window. General diner sign-in stays phone + OTP.
 - **2026-09-26 · Delete and edit.** The delete and edit actions are shown only when the signed-in diner is the post's author. feed_svc still does not enforce that on delete; the app must.
 - **2026-09-26 · Feeds.** Home mixes experiences, curations, and restaurant stories. The Experience and Curation tabs are that same list filtered by post type.
 - **2026-09-26 · Discovery.** Discovery is removed as a destination. Its UI is reused as the story viewer, opened from the circular bubbles at the top of Home.
@@ -103,3 +103,14 @@ Track these in `tech/common/domain-model.md` under "Unconfirmed" and revisit as 
 - **2026-09-26 · Order at table.** A table QR deep link, or the place top-right icon (scan when there is no running order, cart when there is). Not a choice on Reserve.
 - **2026-09-26 · Curation origin.** Create, publish, and save return to the screen where Curate started. They do not always land on My curations or curation-detail.
 - **2026-09-26 · Elara later.** Ask Elara is in the prototype and is not a current tab. It will be added later.
+- **2026-10-01 · Not helpful.** `FEED_POST_REACTION_UNHELPFUL` is the confirmed wire value for Not helpful. It is no longer unconfirmed.
+- **2026-10-01 · Auth.** The WhatsApp magic link is a sign-in method. It is the forced (preferred) sign-in for dine-in and paid-QSR, so BE can use WhatsApp's customer-service window to message the user on WhatsApp. General diner sign-in, outside those flows, is phone number + OTP. The magic link is not a general option on the diner phone sheet. This supersedes the 2026-09-26 auth note, which limited the link to the dine-in deep link.
+- **2026-10-01 · OTP length.** The OTP is 6 digits for now. That length is the current value from the OTP provider and may change, so clients must not hard-code it.
+- **2026-10-01 · Live Menu and Live Vibe.** Live Menu is open to guests. Live Vibe needs sign-in.
+- **2026-10-01 · Profile.** The basic user profile view is not gated, but any private information or analytics on the profile is gated behind sign-in. Which fields count as private is not decided here.
+- **2026-10-01 · Tour seen.** The phase 3 tour-seen flag stays on the device. A reinstall may show the tour again. No server flag. This supersedes the phase 3 line that showed the tour once after the first successful verification and not on later logins.
+- **2026-10-01 · Repeat follow and reaction.** Follow and reaction calls may not be safe to repeat. Duplicates are tolerated for now.
+- **2026-10-01 · Drafts.** Guests get no server drafts. Server drafts for signed-in users come later. No draft route is named.
+- **2026-10-01 · Handle check.** The handle availability check is pending from BE. The handle issue is expected to go away once it ships. No path is named.
+- **2026-10-01 · After OTP.** If the guest took an action that triggered the gate, show Complete profile. Otherwise show the tour.
+- **2026-10-01 · Taken handle.** Once the handle check exists, a handle that already exists shows "Already have an account? Sign in".

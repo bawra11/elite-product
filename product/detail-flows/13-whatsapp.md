@@ -1,6 +1,6 @@
 # WhatsApp promotion and review
 
-Promotion and review are separate from sign-in. Diner sign-in is a phone OTP, which can be delivered on WhatsApp. The magic link `PUT /dd/v1/whatsapp/login` is the dine-in deep link only, not a branch on the diner phone sheet. A promotion or a review message sends only when `whatsapp_consent_given` is true. Campaign send is the Nextel refresh worker on the catalog service. No message template and no deep-link contract are captured.
+Promotion and review are separate from sign-in. General diner sign-in is a phone OTP, which can be delivered on WhatsApp. The magic link `PUT /dd/v1/whatsapp/login` is a sign-in method, and it is the forced (preferred) sign-in for dine-in and paid-QSR, so BE can use WhatsApp's customer-service window to message the user on WhatsApp. It is not a branch on the diner phone sheet. A promotion or a review message sends only when `whatsapp_consent_given` is true. Campaign send is the Nextel refresh worker on the catalog service. No message template and no deep-link contract are captured.
 
 ```mermaid
 flowchart TD

@@ -250,8 +250,8 @@ PUT /v1/feed_posts/{uuid}/reaction
 
 Same endpoint, `"reaction":"FEED_POST_REACTION_NONE"` clears the viewer's reaction.
 
-> Only `HELPFUL` and `NONE` appear in either capture. The app sends
-> `FEED_POST_REACTION_UNHELPFUL` for "Not helpful", which is **still unconfirmed** (docs/issues.md M6).
+> `FEED_POST_REACTION_UNHELPFUL` is the confirmed wire value for "Not helpful" (2026-10-01).
+> The captures in this file still only show `HELPFUL` and `NONE`.
 
 ---
 
@@ -424,7 +424,7 @@ app tree was not changed.
    (`lib/core/constants/api_endpoints.dart`). The public ones returned HTTP 200 on stage
    with `x-api-token`. They speak proto3 JSON (`dd/v1/...`), so each needs its own DTO.
 
-Auth on phase01 is phone number + OTP, or WhatsApp magic link (`PUT /dd/v1/whatsapp/login`). No password route.
+General diner sign-in on phase01 is phone number + OTP (`POST /dd/v1/authentication/otps`, `PUT /dd/v1/login/otp`). The WhatsApp magic link (`PUT /dd/v1/whatsapp/login`) is a sign-in method, and it is the forced (preferred) sign-in for dine-in and paid-QSR, so BE can use WhatsApp's customer-service window to message the user on WhatsApp. It is not a general diner sign-in option. No password route. The OTP is 6 digits for now. That length is the current value from the OTP provider and may change, so clients must not hard-code it.
 
 | Source | Endpoint | Method | Auth |
 |---|---|---|---|
@@ -475,9 +475,11 @@ happening on those same routes; there is no separate stories endpoint in either 
 Not in §1–21 and not in dine-in `main` @ `b971951`. The app shows an empty state or
 "coming soon" for these, never demo data (`lib/core/di/injection.dart`).
 
+A server flag for the phase 3 tour is not a gap. The tour-seen flag stays on the device, and a reinstall may show the tour again (2026-10-01). No field is named for one. Repeating `PUT /v1/follows` or `PUT /v1/feed_posts/{uuid}/reaction` is not known to be safe. Duplicates are tolerated for now (2026-10-01).
+
 | Area | What's missing | App seam today |
 |---|---|---|
-| Auth | Handle availability | `AuthRepository.isHandleAvailable` (always true) |
+| Auth | Handle availability | Pending from BE (2026-10-01). The handle issue is expected to go away once it ships. `AuthRepository.isHandleAvailable` (always true). No path captured |
 | Profile | Another user's public profile | — |
 | Profile | Posts by author | Profile filters Home's loaded pages |
 | Profile | Analysis metrics | Computed from loaded posts |
@@ -485,9 +487,8 @@ Not in §1–21 and not in dine-in `main` @ `b971951`. The app shows an empty st
 | Restaurants | Live Vibe | `/restaurant/:id/vibe` empty |
 | Restaurants | Reserve a table | Toast |
 | Feed | Guest-readable single post | `GET` §8 requires a JWT |
-| Feed | `FEED_POST_REACTION_UNHELPFUL` confirmed | Sent as-is |
 | Feed | Edit route (`PUT /v1/feed_posts/{uuid}`) | Edit hidden except for the author, and the route is not captured |
-| Feed | Drafts, report-post | In-memory drafts; no report |
+| Feed | Drafts, report-post | Guests get no server drafts (2026-10-01). Signed-in server drafts come later. In-memory drafts; no report. No draft route captured |
 | Feed | Search must hide soft-deleted posts | §21 bug |
 | Create | Happening / restaurant-story sample body | Empty states on the stories rail |
 | Create | Enrichment trait read-back | "What we read" card hidden |
