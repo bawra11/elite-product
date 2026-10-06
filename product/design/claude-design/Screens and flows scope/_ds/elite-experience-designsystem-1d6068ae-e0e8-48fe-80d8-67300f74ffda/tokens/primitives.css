@@ -1,0 +1,21 @@
+/* Elite / Primitives — shared raw palette. Never bind components to these
+   directly; use the semantic tokens in color.css. Values verbatim from the file. */
+:root{
+--purple-300: #C9BEFF;--purple-400: #A394F3;--purple-500: #745AEB;--purple-600: #6D5CFF;
+--gray-25: #F9F9FF;--gray-50: #F9F9FA;--gray-200: #EAE6F4;--gray-400: #C7C7CC;--gray-500: #8E8E93;--gray-600: #474555;--gray-700: #1F1F1F;--gray-800: #272241;--gray-900: #1A172A;--gray-950: #0A0A0C;
+--gold-400: #F2CA50;--gold-500: #D4AF37;
+--green-300: #53EB8D;--green-400: #6DE3A6;
+--red-500: #FF2D55;--red-800: #A3001B;
+--white: #FFFFFF;--black: #000000;
+/* semantic primitives, mode-independent */
+--primary: var(--purple-500);--on-primary: var(--white);--primary-container: var(--purple-300);--on-primary-container: var(--gray-950);--inverse-primary: var(--purple-400);
+--secondary: var(--gray-500);--on-secondary: var(--white);--tertiary: var(--gold-500);--on-tertiary: var(--gray-950);
+--error: var(--red-500);--on-error: var(--white);--success: var(--green-400);--on-success: var(--gray-950);--warning: var(--gold-500);--on-warning: var(--gray-950);
+/* Experience DNA primitives */
+--dna-title-light: #5847A5;--dna-title-dark: var(--purple-400);--dna-axis-light: #EBA82B;--dna-fill-core: #B2A2FF;
+--dna-grid-light: var(--gray-200);--dna-grid-dark: var(--gray-800);--reco-worth: #3C4E45;--reco-not-worth: #5E2B5A;
+/* glass primitives */
+--glass-fill-light: rgba(255,255,255,0.161);--glass-fill-strong-light: rgba(255,255,255,0.361);--glass-stroke-light: rgba(255,255,255,0.561);--glass-highlight-light: rgba(255,255,255,0.651);
+--glass-fill-dark: rgba(255,255,255,0.122);--glass-fill-strong-dark: rgba(26,23,42,0.600);--glass-stroke-dark: rgba(255,255,255,0.251);--glass-highlight-dark: rgba(255,255,255,0.349);
+--scrim-light: rgba(0,0,0,0.349);--scrim-dark:#00000099
+}

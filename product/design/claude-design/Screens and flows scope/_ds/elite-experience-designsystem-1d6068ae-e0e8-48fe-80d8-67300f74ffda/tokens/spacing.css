@@ -1,0 +1,7 @@
+/* Elite / Spacing — 4px rhythm, 8px common step. Frame width 390×884. */
+:root{
+--space-0:0px;--space-xs:4px;--space-sm:8px;--space-md:12px;--space-lg:16px;--space-xl:20px;
+--space-2xl:24px;--space-3xl:32px;--space-4xl:40px;
+--space-screen-gutter:20px;--space-button-height:48px;--space-chip-height:32px;
+--frame-width:390px;--frame-height:884px
+}

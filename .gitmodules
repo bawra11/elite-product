@@ -22,3 +22,6 @@
 	path = tech/codebase/BE/protos_dart
 	url = git@github.com:explorexinc/protos_dart.git
 	branch = main
+[submodule "tech/codebase/current-prod"]
+	path = tech/codebase/current-prod
+	url = git@github.com:explorexinc/elite-app.git

@@ -1,0 +1,44 @@
+/* Elite / Color — TWO parallel systems. Light is :root; Dark is [data-theme="dark"]
+   (and follows prefers-color-scheme when no attribute is set). Never paint a dark
+   screen with leftover light hex — switch the mode.
+
+   Light surfaces were re-tuned from the shipped Diner app: canvas, surface, muted and
+   outline sit slightly warmer and darker than pure white so a full screen of cards does
+   not glare. Do not raise them back to #FFFFFF/#F9F9FA. */
+:root{
+--canvas: var(--gray-50);--surface: var(--white);--surface-elevated: var(--white);--muted: var(--gray-200);--inverse: var(--gray-950);
+--on-surface: var(--gray-950);--on-surface-variant: var(--gray-500);--on-disabled: var(--gray-400);--outline: var(--gray-200);
+--accent: var(--purple-500);--accent-strong: var(--purple-600);--scrim: var(--scrim-light);
+--glass-fill: var(--glass-fill-light);--glass-fill-strong: var(--glass-fill-strong-light);--glass-stroke: var(--glass-stroke-light);--glass-highlight: var(--glass-highlight-light);--glass-text: var(--gray-950);
+--background: var(--gray-50);--on-background: var(--gray-950);
+--dna-title: var(--dna-title-light);--dna-axis: #8A6A16;--dna-percent: var(--purple-500);--dna-caption: var(--gray-500);
+--dna-grid: var(--gray-200);--dna-fill: var(--dna-fill-core);--dna-sheet: var(--gray-50);--dna-ring: var(--gold-500);
+/* chrome — translucent navigation bar over content */
+--nav-bg: rgba(240,238,246,0.502);--nav-border: rgba(10,10,12,0.059);--nav-idle: var(--gray-500);
+/* editorial backdrop — dot lattice / bloom, marketing + pre-auth surfaces only */
+--pattern: rgba(116,90,235,0.161);--bloom: rgba(116,90,235,0.141);
+/* list rows — flat feed rows that are not cards */
+--row: var(--white);--row-stroke: var(--color-primary-accent-12);
+/* recommendation ink — binary, never a rating scale */
+--pos: var(--color-score-good);--pos-bg: rgba(83,235,141,0.502);--neg: var(--gray-500);--neg-bg: rgba(163,0,27,0.102);
+/* text / surface aliases used across components */
+--text-primary: var(--gray-950);--text-secondary: var(--gray-500);--text-disabled: var(--gray-400);--text-on-accent: var(--white);
+--surface-card: var(--white);--border-hairline:#DED9EB
+}
+[data-theme="dark"]{
+--canvas: var(--gray-950);--surface: var(--gray-900);--surface-elevated: var(--gray-800);--muted: var(--gray-800);--inverse: var(--gray-50);
+--on-surface: var(--gray-50);--on-surface-variant: var(--gray-400);--on-disabled: var(--gray-600);--outline: var(--gray-700);
+--accent: var(--purple-400);--accent-strong: var(--purple-500);--scrim: var(--color-scrim-dark);
+--glass-fill: var(--glass-fill-dark);--glass-fill-strong: var(--glass-fill-strong-dark);--glass-stroke: var(--glass-stroke-dark);--glass-highlight: var(--glass-highlight-dark);--glass-text: var(--white);
+--background: var(--gray-950);--on-background: var(--gray-50);
+--dna-title: var(--purple-400);--dna-axis: var(--gold-400);--dna-percent: var(--purple-300);--dna-caption: var(--purple-300);
+--dna-grid: var(--gray-800);--dna-fill: var(--dna-fill-core);--dna-sheet: var(--gray-900);--dna-ring: var(--gold-400);
+--nav-bg: rgba(10,10,12,0.400);--nav-border: var(--color-surface-glass-light);--nav-idle: var(--gray-500);
+--pattern: rgba(163,148,243,0.149);--bloom: rgba(116,90,235,0.220);
+--row: #1E1B2E;--row-stroke: var(--scrim-light);
+--pos: var(--green-400);--pos-bg: rgba(83,235,141,0.200);--neg: #E0A6AE;--neg-bg: rgba(163,0,27,0.220);
+--text-primary: var(--gray-50);--text-secondary: var(--gray-400);--text-disabled: var(--gray-600);--text-on-accent: var(--white);
+--surface-card: var(--gray-900);--border-hairline:#1F1F1F
+}
+a{color:var(--accent);text-decoration:none}
+a:hover{color:var(--accent-strong);text-decoration:underline}

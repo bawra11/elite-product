@@ -147,7 +147,7 @@ when the real API lands.
 - `ExperienceDna` / `DnaAxis`: working assumption — restaurant only, and only after 100 verified experiences. 3–6 axes, mention-weighted percentages, verified count, summary. Never on an individual experience.
 - `Curation` / `CurationSpot` / `CuratorSummary`: up to 15 spots; each spot has a note, verified-visited and promoted flags. The wire payload is confirmed (§7); these richer spot fields are still frontend-only.
 - `RestaurantStory`: restaurant-authored happening, with media, dish tags and an offer.
-- `StoryRing`: the Home stories rail, one ring per restaurant. Until BE ships a stories endpoint, phase01 fills it from happening posts on feed search (placeholder).
+- `StoryRing`: the Home stories rail, one ring per followed author from `PUT /v1/feed_posts/following/grouped_by_author` (§23). The ring opens that author's best post. Guests get an empty rail.
 
 **Auth.** General diner sign-in is phone number + OTP. The WhatsApp magic link
 (`PUT /dd/v1/whatsapp/login`) is a sign-in method, and it is the forced (preferred)

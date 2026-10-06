@@ -65,10 +65,11 @@ X-API-TOKEN: <X-API-TOKEN>
 - The feed mixes post types. `FEED_POST_TYPE_EXPERIENCE` and `FEED_POST_TYPE_CURATION` both
   come back. A restaurant story is the same feed with `FEED_POST_TYPE_HAPPENING` and a
   `payload.happening` of `{restaurant_id, starts_at, ends_at}` (no sample in this capture).
-  feed_svc (stage) reads an optional top-level `post_types` list (`["FEED_POST_TYPE_HAPPENING"]`)
-  to filter server-side. phase01 sends it for the Home stories rail and still filters client-side.
-  That is a placeholder: the rail still needs a dedicated stories endpoint (restaurants with
-  unseen stories), requested in be-requests §6.
+  feed_svc (stage) reads an optional top-level `post_types` list
+  (`["FEED_POST_TYPE_HAPPENING"]`, `["FEED_POST_TYPE_CURATION"]`) to filter
+  server-side. The curation tab sends `page_request.size` 10, `cursor: ""`,
+  and that `post_types` list — not a `request` key named `post_type`.
+  The Home stories rail does not use this search; it uses §23.
 - `next_cursor` is an opaque base64 string. Send it back as the **top-level `cursor`** field,
   beside `page_request` (feed_svc reads `req.GetCursor()`; `PageRequest` has only `page`/`size`).
   An undecodable cursor is a 400 (`feed_svc_6`).
@@ -144,6 +145,23 @@ PUT /v1/feed_posts
 
 ---
 
+## 23. Follow feed grouped by author (stories rail)
+
+Signed-in only. One group per followed author (user, restaurant, or brand), authors ordered by
+their newest post, each group's `posts` best-first. The Home stories rail renders one bubble
+per group. Guests have no call. At most 10 authors; `page_request.size` above 10 is treated as 10.
+
+```
+PUT /v1/feed_posts/following/grouped_by_author
+{"page_request":{"page":0,"size":10},"cursor":""}
+```
+
+`200` → `{ groups: [{ author: FeedPostAuthor, posts: FeedPost[] }], next_cursor }`
+
+`cursor` is opaque. Empty is the first page. An undecodable cursor is a 400.
+
+---
+
 ## 4. File upload URL
 
 Step 1 of attaching media.
@@ -184,10 +202,22 @@ curl -sS -X PUT "$PRE_SIGNED_URL" -H 'Content-Type: image/jpeg' --data-binary @.
 
 feed_svc validates every create (`pkg/domain/payload/validate.go`, after trimming), returning
 400 `feed_svc_5` with the reason:
-- experience: `payload.experience.restaurant_id`, `title` and `body` are all required;
-- curation: `title` required; at most **15** `members`, each with a `restaurant_id`, no
-  duplicates; a published curation needs at least one. `position` is reassigned from order;
+- experience: `payload.experience.restaurant_id` **or** `payload.experience.place_id` (a Google
+  place id from §22), `title` and `body` are all required;
+- curation: `title` required; at most **15** `members`, each with a `restaurant_id` or a
+  `place_id`, no duplicates (keyed by restaurant id, else `place:<place_id>`); a published
+  curation needs at least one. `position` is reassigned from order;
+- a `place_id` with no `restaurant_id` is resolved by feed_svc before validation
+  (restaurant_catalog `EnsureRestaurantsFromGooglePlaces`, not exposed to the diner); the created
+  post and §8 come back with `restaurant_id` filled. The app sends exactly one of the two
+  (feed_svc PR #17, protos #1142, 2026-10-01);
 - every media needs a non-INVALID `media_type` and a `raw_media_url.file_path`.
+- `payload.experience.dishes[]` (`ExperienceDish`, protos `068f3af2`): dish tags from the body.
+  The app sends `dish_menu_id`, `dish_menu_entry_id`, `name` and `text_start`/`text_end` (Unicode
+  code-point offsets of the `@name` in `body`, end exclusive), only on a verified visit, from the
+  order's KOT lines. feed_svc looks each up on the restaurant's menu (400 "tagged dish is not on
+  the menu" otherwise; needs `restaurant_id`) and fills `dish_id`, `description`, `meat_category`,
+  `image_path` (`pkg/svc/feed_experience_dish.go`).
 
 ```
 POST /v1/feed_posts
@@ -413,6 +443,36 @@ Authorization: $ACCESS_TOKEN
 
 ---
 
+## 22. Composer restaurant search
+
+Added 2026-10-01 (customer_gateway PR #128, restaurant_catalog_svc `composer_restaurant.go`).
+Private (JWT) only; there is no public route.
+
+```
+PUT /dd/v1/restaurant_catalog/restaurants/composer_search
+Authorization: $ACCESS_TOKEN
+
+{"query":"Kake Di Hatti Indiranagar",
+ "user_location":{"latitude":12.9716,"longitude":77.5946},
+ "page_size":20}
+```
+
+`200` → `ComposerRestaurantSearchResponse`: `{"hits":[ComposerRestaurantHit…]}` with
+`uuid`, `place_id`, `name`, `address`, `latitude`, `longitude`, `image` (FileUrl), `source`
+(`COMPOSER_RESTAURANT_SOURCE_CATALOG` / `_GOOGLE`), `profile_meta` (catalog hits only:
+`uuid`, `display_name`, `display_image`, `logo`).
+
+- A query under 3 characters returns no hits (catalog included). `page_size` defaults to 10,
+  max 20. `user_location` only biases (20 km catalog filter, Google location bias); omit it when
+  unknown.
+- Catalog first. Google Places is called only when the catalog returns fewer than 5 hits. A
+  Google place that matches a catalog row by name within 150 m comes back as that catalog hit
+  (with the place id). Other Google hits have an empty `uuid`, a `place_id`, no image.
+- Post for a Google hit with its `place_id` (§6–7); for a catalog hit with its `restaurant_id`.
+- Not yet captured live in this doc (no sample response pulled; shapes from protos v0.33.84).
+
+---
+
 ## Phase01 endpoint set
 
 phase01 calls the union of two lists. This environment cannot read `explorexinc/elite`
@@ -431,6 +491,7 @@ General diner sign-in on phase01 is phone number + OTP (`POST /dd/v1/authenticat
 | §1 | `/dd/v1/auth_tokens/refresh` | POST | refresh token |
 | §2 | `/v1/public/feed_posts` | PUT | `X-API-TOKEN` |
 | §3 | `/v1/feed_posts` (search) | PUT | JWT |
+| §23 | `/v1/feed_posts/following/grouped_by_author` | PUT | JWT |
 | §4 | `/v1/feed_posts/file_uploads` | PUT | JWT |
 | §6–7 | `/v1/feed_posts` (create experience or curation) | POST | JWT |
 | §8 | `/v1/feed_posts/{uuid}` | GET | JWT |
@@ -446,6 +507,7 @@ General diner sign-in on phase01 is phone number + OTP (`POST /dd/v1/authenticat
 | §19 | `/v1/blocks/unblock` | POST | JWT |
 | §20 | `/dd/v1/users/current` | GET | JWT |
 | §21 | `/v1/feed_posts/{uuid}` | DELETE | JWT, author only in the UI |
+| §22 | `/dd/v1/restaurant_catalog/restaurants/composer_search` | PUT | JWT |
 | main | `/dd/v1/authentication/otps` | POST | none |
 | main | `/dd/v1/login/otp` | PUT | none |
 | main | `/dd/v1/register/otp` | POST | none |
@@ -466,9 +528,12 @@ Restaurant search (gateway `SearchRestaurantV2`) needs `page_request` and a `use
 only Elite-member restaurants as the slim `RestaurantDtoV2` (`uuid`, `name`, `display_name`,
 `google_sub_locality`, `image`, `elite_listing_gallery`, no cuisines or city), under `response[]`.
 
+Order history (`/dd/v1/users/orders/histories`) takes `page_request` and an optional
+`restaurant_ids[]` filter; order_svc answers 400 to any `page_request.size` over 10, so page through it.
+
 Feed search sends `post_types` and `cursor` as top-level fields (§2), not inside `page_request`.
 Experience and curation are both created on `POST /v1/feed_posts`. A restaurant story is a
-happening on those same routes; there is no separate stories endpoint in either list.
+happening on those same routes. The Home stories rail is §23 (one bubble per followed author).
 
 ## Still absent from both documented lists
 
@@ -490,8 +555,10 @@ A server flag for the phase 3 tour is not a gap. The tour-seen flag stays on the
 | Feed | Edit route (`PUT /v1/feed_posts/{uuid}`) | Edit hidden except for the author, and the route is not captured |
 | Feed | Drafts, report-post | Guests get no server drafts (2026-10-01). Signed-in server drafts come later. In-memory drafts; no report. No draft route captured |
 | Feed | Search must hide soft-deleted posts | §21 bug |
-| Create | Happening / restaurant-story sample body | Empty states on the stories rail |
+| Create | Happening / restaurant-story sample body | No happening create sample; the stories rail is §23 |
 | Create | Enrichment trait read-back | "What we read" card hidden |
 | Create | `cover_media_id` echo, Google-place import | Cover re-uploaded; non-partner places deferred |
+| Create | Bill-photo (OCR) visit verification; a partner flag on `ComposerRestaurantHit` | Google and non-partner picks show "Upload your bill · FE/NA"; partner = catalog hit |
+| Create | `image` on Google `ComposerRestaurantHit`s (catalog fetches the Places photo only at ensure/create time) | The app reads the photo itself from Places API (New) with `google_places_api_key` (`GooglePlacePhotos`): one Place Details call per Google hit per session |
 | Tokens | Balance, ledger, Amplify | Wallet card hidden; "Amplify is coming soon." |
 | Other | Push registration, city list / geocode | No push; fixed Bengaluru lat/lng |

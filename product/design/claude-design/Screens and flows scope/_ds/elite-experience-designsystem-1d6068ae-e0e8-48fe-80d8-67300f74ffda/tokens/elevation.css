@@ -1,0 +1,12 @@
+/* Two depth systems, never mixed on one surface.
+   Flat = shadow + opaque fill. Glass = blur + translucent fill + 1px stroke. */
+:root{
+--elevation-flat-low:0 1px 2px rgba(0,0,0,0.08);
+--elevation-flat-card:0 4px 12px rgba(0,0,0,0.12);
+--blur-chip:12px;--blur-overlay:20px;--blur-sheet:40px
+}
+.elev-flat-low{box-shadow:var(--elevation-flat-low)}
+.elev-flat-card{box-shadow:var(--elevation-flat-card)}
+.glass-chip{background:var(--glass-fill);border:1px solid var(--glass-stroke);backdrop-filter:blur(var(--blur-chip));-webkit-backdrop-filter:blur(var(--blur-chip));color:var(--glass-text)}
+.glass-overlay{background:var(--glass-fill-strong);border:1px solid var(--glass-stroke);backdrop-filter:blur(var(--blur-overlay));-webkit-backdrop-filter:blur(var(--blur-overlay));color:var(--glass-text)}
+.glass-sheet{background:var(--glass-fill-strong);border:1px solid var(--glass-stroke);backdrop-filter:blur(var(--blur-sheet));-webkit-backdrop-filter:blur(var(--blur-sheet));color:var(--glass-text)}

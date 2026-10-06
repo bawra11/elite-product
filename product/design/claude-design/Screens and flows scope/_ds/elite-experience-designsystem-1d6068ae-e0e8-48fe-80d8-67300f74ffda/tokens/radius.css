@@ -1,0 +1,6 @@
+/* Elite / Radius. Pill for actions, md for containers, xl for large media masks.
+   sheet and search both sit at 36 — bottom sheets, the Explore search bar and the
+   universal search bar are one family and must not disagree.
+   note (14) is the real value used by note cards, date chips, list tiles and small
+   media tiles in the Diner app; it is not a rounding error. */
+:root{--radius-sm:12px;--radius-note:14px;--radius-md:16px;--radius-lg:20px;--radius-xl:36px;--radius-sheet:36px;--radius-search:36px;--radius-full:9999px}

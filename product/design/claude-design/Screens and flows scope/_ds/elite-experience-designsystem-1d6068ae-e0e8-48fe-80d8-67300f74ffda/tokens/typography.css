@@ -1,0 +1,44 @@
+/* Type/* text styles. Playfair Display for display, Poppins for UI.
+   Sizes, weights and line-heights are the file's values — do not round. */
+:root{
+--type-display-hero:400 32px/40px var(--font-display);
+--type-display-title:400 24px/32px var(--font-display);
+--type-display-subtitle:400 20px/28px var(--font-display);
+--type-headline-lg:600 22px/28px var(--font-ui);
+--type-headline-md:600 17px/22px var(--font-ui);
+--type-body-md:400 14px/20px var(--font-ui);
+--type-body-sm:400 13px/18px var(--font-ui);
+--type-label-md:500 13px/18px var(--font-ui);
+--type-label-sm:500 12px/16px var(--font-ui);
+--type-caption:400 11px/14px var(--font-ui);
+--type-button:600 15px/20px var(--font-ui);
+--type-display-tile:400 16px/20px var(--font-display);
+--type-display-subtitle-tight:400 20px/20px var(--font-display);
+--type-wordmark:700 32px/40px var(--font-ui);
+--type-dna-title:900 32px/40px var(--font-display);
+--type-dna-title-compact:900 20px/28px var(--font-display);
+--type-dna-tagline:300 15px/22px var(--font-ui);
+--type-dna-axis:300 11px/12px var(--font-ui);
+--type-dna-percent:700 11px/12px var(--font-ui);
+--type-dna-body:400 8px/16px var(--font-ui)
+}
+.type-display-hero{font:var(--type-display-hero)}
+.type-display-title{font:var(--type-display-title)}
+.type-display-subtitle{font:var(--type-display-subtitle)}
+.type-headline-lg{font:var(--type-headline-lg)}
+.type-headline-md{font:var(--type-headline-md)}
+.type-body-md{font:var(--type-body-md)}
+.type-body-sm{font:var(--type-body-sm)}
+.type-label-md{font:var(--type-label-md)}
+.type-label-sm{font:var(--type-label-sm)}
+.type-caption{font:var(--type-caption)}
+.type-button{font:var(--type-button)}
+.type-display-tile{font:var(--type-display-tile)}
+.type-display-subtitle-tight{font:var(--type-display-subtitle-tight)}
+.type-wordmark{font:var(--type-wordmark);letter-spacing:-1.6px;color:var(--accent)}
+.type-dna-title{font:var(--type-dna-title)}
+.type-dna-title-compact{font:var(--type-dna-title-compact)}
+.type-dna-tagline{font:var(--type-dna-tagline)}
+.type-dna-axis{font:var(--type-dna-axis)}
+.type-dna-percent{font:var(--type-dna-percent)}
+.type-dna-body{font:var(--type-dna-body)}
