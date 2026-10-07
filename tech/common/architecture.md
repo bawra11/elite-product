@@ -76,8 +76,10 @@ repository). Home, its curation rail and My curations listen, so a new post is o
 once and a deleted curation leaves every list. Hive keeps auth state only. Curation drafts,
 private lists and a just-published curation are held for the app session (stage has no
 draft or "my posts" endpoint). Profile's experiences and curations are the feed search
-filtered to the diner's URN, re-read from stage on each landing, on returning to the
-foreground, and on pull-to-refresh; a failed read keeps what is shown. Edit on posts is
+by `author_urn` (api-reference.md §3), re-read from stage on each landing, on returning to
+the foreground, and on pull-to-refresh; a failed read keeps what is shown. Each tab is its own request
+by `post_types` with its own cursor (`AuthorPostsCubit`), paging on scroll; another diner's
+profile reads both tabs the same way when it opens. Edit on posts is
 hidden until feed_svc has an update route.
 
 Place profile's sticky bar is Reserve Table + Place Pay. Order-at-table is the top-right

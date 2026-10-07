@@ -73,8 +73,8 @@ X-API-TOKEN: <X-API-TOKEN>
 - `next_cursor` is an opaque base64 string. Send it back as the **top-level `cursor`** field,
   beside `page_request` (feed_svc reads `req.GetCursor()`; `PageRequest` has only `page`/`size`).
   An undecodable cursor is a 400 (`feed_svc_6`).
-- Both `user_location` and a non-empty `visibility_tags` are required (400 `feed_svc_4` otherwise).
-  `size: 0` means 10.
+- Both `user_location` and a non-empty `visibility_tags` are required (400 `feed_svc_4` otherwise),
+  unless the request has `author_urn` (below). `size: 0` means 10.
 
 ### FeedPost shape
 
@@ -141,6 +141,24 @@ Same request and response as §2, authenticated (`Authorization: $ACCESS_TOKEN`,
 
 ```
 PUT /v1/feed_posts
+```
+
+
+**By author (profiles).** A `request` key `author_urn` (a string:
+`urn:explorex:users|restaurants|brands:{uuid}`) lists that author's published **public** posts,
+newest first, and needs neither `user_location` nor `visibility_tags` (feed_svc `stage`,
+`61fec56`). `post_types` and the `cursor` still apply. Both Profiles use it, one request per tab, each
+with its own list and `cursor` (nothing is filtered on the device): Experiences sends
+`["FEED_POST_TYPE_EXPERIENCE"]`, Curations `["FEED_POST_TYPE_CURATION"]`, 20 a page, and the
+visible tab asks for its next page on scroll. Own Profile's Curations reads up to 5 pages at once
+to merge them with this session's drafts. Private posts never come back, so a private curation shows only on the device that saved it.
+
+```bash
+curl -sS -X PUT "$BASE/v1/feed_posts" \
+  -H 'Content-Type: application/json' -H 'x-app-name: elite-app-ios' -H 'x-app-version: 1.0.0' \
+  -H "Authorization: $ACCESS_TOKEN" \
+  -d '{"page_request":{"page":0,"size":20},"cursor":"","post_types":["FEED_POST_TYPE_EXPERIENCE"],
+       "request":[{"key":"author_urn","value":"urn:explorex:users:42a571e6-3eaf-4876-97c4-e2851334ba49"}]}'
 ```
 
 ---
@@ -546,7 +564,6 @@ A server flag for the phase 3 tour is not a gap. The tour-seen flag stays on the
 |---|---|---|
 | Auth | Handle availability | Pending from BE (2026-10-01). The handle issue is expected to go away once it ships. `AuthRepository.isHandleAvailable` (always true). No path captured |
 | Profile | Another user's public profile | — |
-| Profile | Posts by author | Profile filters Home's loaded pages |
 | Profile | Analysis metrics | Computed from loaded posts |
 | Restaurants | Experience DNA + verified-experience count | `RestaurantSummary.dna` null |
 | Restaurants | Live Vibe | `/restaurant/:id/vibe` empty |
