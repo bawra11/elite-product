@@ -145,8 +145,7 @@ PUT /v1/feed_posts
 
 
 **By author (profiles).** A `request` key `author_urn` (a string:
-`urn:explorex:users|restaurants|brands:{uuid}`) lists that author's published **public** posts,
-newest first, and needs neither `user_location` nor `visibility_tags` (feed_svc `stage`,
+`urn:explorex:users|restaurants|brands:{uuid}`) lists that author's published **public** posts, and needs neither `user_location` nor `visibility_tags` (feed_svc `stage`,
 `61fec56`). `post_types` and the `cursor` still apply. Both Profiles use it, one request per tab, each
 with its own list and `cursor` (nothing is filtered on the device): Experiences sends
 `["FEED_POST_TYPE_EXPERIENCE"]`, Curations `["FEED_POST_TYPE_CURATION"]`, 20 a page, and the
@@ -159,6 +158,22 @@ curl -sS -X PUT "$BASE/v1/feed_posts" \
   -H "Authorization: $ACCESS_TOKEN" \
   -d '{"page_request":{"page":0,"size":20},"cursor":"","post_types":["FEED_POST_TYPE_EXPERIENCE"],
        "request":[{"key":"author_urn","value":"urn:explorex:users:42a571e6-3eaf-4876-97c4-e2851334ba49"}]}'
+```
+
+**By restaurant (place profile).** A `request` key `restaurant_id` (the bare uuid, or
+`urn:explorex:restaurants:{uuid}`) lists the public posts that tag that place: an experience's
+`payload.experience.restaurant_id` or a curation member's (feed_svc `stage`, `13b63c1`). The place
+profile's Experiences grid sends it with `["FEED_POST_TYPE_EXPERIENCE"]`, 20 a page, and pages on
+scroll with its own `cursor`; the device filters by neither type nor place (it only hides blocked
+diners). Both listing keys are ranked by score unless the request carries a `sort_param`, which
+orders by `published_at`; the app sends none.
+
+```bash
+curl -sS -X PUT "$BASE/v1/feed_posts" \
+  -H 'Content-Type: application/json' -H 'x-app-name: elite-app-ios' -H 'x-app-version: 1.0.0' \
+  -H "Authorization: $ACCESS_TOKEN" \
+  -d '{"page_request":{"page":0,"size":20},"cursor":"","post_types":["FEED_POST_TYPE_EXPERIENCE"],
+       "request":[{"key":"restaurant_id","value":"45e971cd-f86b-4894-a5ce-32403af36629"}]}'
 ```
 
 ---
