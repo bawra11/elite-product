@@ -559,6 +559,6 @@ A server flag for the phase 3 tour is not a gap. The tour-seen flag stays on the
 | Create | Enrichment trait read-back | "What we read" card hidden |
 | Create | `cover_media_id` echo, Google-place import | Cover re-uploaded; non-partner places deferred |
 | Create | Bill-photo (OCR) visit verification; a partner flag on `ComposerRestaurantHit` | Google and non-partner picks show "Upload your bill · FE/NA"; partner = catalog hit |
-| Create | `image` on Google `ComposerRestaurantHit`s (catalog fetches the Places photo only at ensure/create time) | The app reads the photo itself from Places API (New) with `google_places_api_key` (`GooglePlacePhotos`): one Place Details call per Google hit per session |
+| Create | `image` on Google `ComposerRestaurantHit`s (catalog fetches the Places photo only at ensure/create time) | No image: the app doesn't call Google Places for a photo (removed 7 Oct 2026), so the hit shows the restaurant's initial until BE sends an `image` |
 | Tokens | Balance, ledger, Amplify | Wallet card hidden; "Amplify is coming soon." |
 | Other | Push registration, city list / geocode | No push; fixed Bengaluru lat/lng |

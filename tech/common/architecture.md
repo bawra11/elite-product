@@ -73,9 +73,12 @@ orphaned the awaited push (the action never resumed after the gate).
 
 The diner's own publishes and deletes go out on `FeedChanges` (announced by the feed
 repository). Home, its curation rail and My curations listen, so a new post is on Profile at
-once and a deleted curation leaves every list. Curation drafts and the curations published
-from the device are kept in a Hive box (stage has no draft or "my posts" endpoint). Edit on
-posts is hidden until feed_svc has an update route.
+once and a deleted curation leaves every list. Hive keeps auth state only. Curation drafts,
+private lists and a just-published curation are held for the app session (stage has no
+draft or "my posts" endpoint). Profile's experiences and curations are the feed search
+filtered to the diner's URN, re-read from stage on each landing, on returning to the
+foreground, and on pull-to-refresh; a failed read keeps what is shown. Edit on posts is
+hidden until feed_svc has an update route.
 
 Place profile's sticky bar is Reserve Table + Place Pay. Order-at-table is the top-right
 icon (scan with no visit, cart with one). Creating a curation pops back to the origin
