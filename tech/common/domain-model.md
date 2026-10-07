@@ -108,6 +108,12 @@ discriminator on almost every follow-graph call (following, followers, counts) �
 domain layer should not offer a "list all follows regardless of type" convenience unless
 BE adds one.
 
+### `UserProfileMetadata`, `RestaurantProfileMetadata`, `BrandProfileMetadata`
+BE added 2026-10-08 (`api-reference.md` §24, protos `8bc7853`); not yet wired in the app.
+One read per profile gives name, image and totals over published public posts, plus live
+follower (and, for users, following) counts from Redis. These counts are `uint32` numbers,
+not the string counts of §13/§15. Prefer them over counting loaded posts once wired.
+
 ## Unconfirmed entities (no API sample yet)
 
 Model these as domain entities/interfaces now (so the BLoC/repository layer has a stable

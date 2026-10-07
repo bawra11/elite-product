@@ -504,6 +504,38 @@ Authorization: $ACCESS_TOKEN
 - Post for a Google hit with its `place_id` (§6–7); for a catalog hit with its `restaurant_id`.
 - Not yet captured live in this doc (no sample response pulled; shapes from protos v0.33.84).
 
+## 24. Profile metadata (user, restaurant, brand)
+
+Added 2026-10-08 (customer_gateway `feat/profile-metadata-routes` @ `fe6ac0a`, protos `8bc7853`,
+protos_dart `a0dbc6e`). The app does not call these yet.
+
+```
+GET /v1/public/users/{user_uuid}/profile_metadata          X-API-TOKEN
+GET /v1/public/restaurants/{restaurant_id}/profile_metadata X-API-TOKEN
+GET /v1/public/brands/{uuid}/profile_metadata              X-API-TOKEN
+GET /v1/users/{user_uuid}/profile_metadata                 JWT
+GET /v1/restaurants/{restaurant_id}/profile_metadata       JWT
+GET /v1/brands/{uuid}/profile_metadata                     JWT
+```
+
+`200` → the `*ProfileMetadata` message (shapes from protos, no live sample pulled yet):
+
+- `UserProfileMetadata`: `uuid`, `display_name`, `display_image`, plus totals over the diner's
+  published public experiences: `experience_count`, `verified_experience_count`,
+  `worth_it_count`, `helpful_count`, `unhelpful_count`, `impression_count`; and live
+  `follower_count`, `following_count` (following spans users, restaurants and brands).
+- `RestaurantProfileMetadata`: `uuid`, `display_name`, `display_image`, `logo`, `account_id`,
+  `franchise_id`, plus its own happenings (`happening_count`, `helpful_count`,
+  `unhelpful_count`, `impression_count`), experiences that name it (`experience_about_count`,
+  `experience_about_impression_count`), curations that include it (`curation_about_count`), and
+  live `follower_count`.
+- `BrandProfileMetadata`: `uuid`, `display_name`, `display_image`, `curation_count`,
+  `happening_count`, `helpful_count`, `unhelpful_count`, `impression_count`, live `follower_count`.
+
+Follower/following counts are read from Redis on each call, not stored on the row. Restaurants and
+brands are followees only, so they have no following count. Counts are `uint32`; proto3 JSON
+renders them as numbers, unlike the string counts of §13 and §15, and omits zeros.
+
 ---
 
 ## Phase01 endpoint set
@@ -541,6 +573,8 @@ General diner sign-in on phase01 is phone number + OTP (`POST /dd/v1/authenticat
 | §20 | `/dd/v1/users/current` | GET | JWT |
 | §21 | `/v1/feed_posts/{uuid}` | DELETE | JWT, author only in the UI |
 | §22 | `/dd/v1/restaurant_catalog/restaurants/composer_search` | PUT | JWT |
+| §24 | `/v1/public/{users,restaurants,brands}/{id}/profile_metadata` | GET | `X-API-TOKEN` |
+| §24 | `/v1/{users,restaurants,brands}/{id}/profile_metadata` | GET | JWT |
 | main | `/dd/v1/authentication/otps` | POST | none |
 | main | `/dd/v1/login/otp` | PUT | none |
 | main | `/dd/v1/register/otp` | POST | none |
@@ -570,7 +604,7 @@ happening on those same routes. The Home stories rail is §23 (one bubble per fo
 
 ## Still absent from both documented lists
 
-Not in §1–21 and not in dine-in `main` @ `b971951`. The app shows an empty state or
+Not in §1–24 and not in dine-in `main` @ `b971951`. The app shows an empty state or
 "coming soon" for these, never demo data (`lib/core/di/injection.dart`).
 
 A server flag for the phase 3 tour is not a gap. The tour-seen flag stays on the device, and a reinstall may show the tour again (2026-10-01). No field is named for one. Repeating `PUT /v1/follows` or `PUT /v1/feed_posts/{uuid}/reaction` is not known to be safe. Duplicates are tolerated for now (2026-10-01).
@@ -578,9 +612,9 @@ A server flag for the phase 3 tour is not a gap. The tour-seen flag stays on the
 | Area | What's missing | App seam today |
 |---|---|---|
 | Auth | Handle availability | Pending from BE (2026-10-01). The handle issue is expected to go away once it ships. `AuthRepository.isHandleAvailable` (always true). No path captured |
-| Profile | Another user's public profile | — |
-| Profile | Analysis metrics | Computed from loaded posts |
-| Restaurants | Experience DNA + verified-experience count | `RestaurantSummary.dna` null |
+| Profile | Another user's public profile beyond §24's name, image and totals | — |
+| Profile | Analysis metrics beyond §24's totals | Computed from loaded posts; §24 totals not wired yet (2026-10-08) |
+| Restaurants | Experience DNA + verified-experience count (§24 has `experience_about_count`, not a verified count) | `RestaurantSummary.dna` null |
 | Restaurants | Live Vibe | `/restaurant/:id/vibe` empty |
 | Restaurants | Reserve a table | Toast |
 | Feed | Guest-readable single post | `GET` §8 requires a JWT |

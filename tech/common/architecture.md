@@ -79,9 +79,10 @@ draft or "my posts" endpoint). Profile's experiences and curations are the feed 
 by `author_urn` (api-reference.md §3), re-read from stage on each landing, on returning to
 the foreground, and on pull-to-refresh; a failed read keeps what is shown. Each tab is its own request
 by `post_types` with its own cursor (`AuthorPostsCubit`), paging on scroll; another diner's
-profile reads both tabs the same way when it opens. A place profile's Experiences grid is the same
-paged list by `restaurant_id` (`PostListCubit`, `feed_shared`). Edit on posts is
-hidden until feed_svc has an update route.
+profile reads both tabs the same way when it opens. A place profile's Experiences tab is the same
+paged list by `restaurant_id` (`PostListCubit`, `feed_shared`), drawn as the design's feed cards
+without the place strip or place photo. Edit on posts is hidden until feed_svc has an update route.
+Follow is hidden on the diner's own account, and the Block CTA is hidden everywhere for now.
 
 Place profile's sticky bar is Reserve Table + Place Pay. Order-at-table is the top-right
 icon (scan with no visit, cart with one). Creating a curation pops back to the origin
