@@ -507,7 +507,8 @@ Authorization: $ACCESS_TOKEN
 ## 24. Profile metadata (user, restaurant, brand)
 
 Added 2026-10-08 (customer_gateway `feat/profile-metadata-routes` @ `fe6ac0a`, protos `8bc7853`,
-protos_dart `a0dbc6e`). The app does not call these yet.
+protos_dart `a0dbc6e`). The app calls the user and brand routes (protos_dart `v0.34.25`): Profile
+(own counts) and the diner/brand public profile. It does not call the restaurant route yet.
 
 ```
 GET /v1/public/users/{user_uuid}/profile_metadata          X-API-TOKEN
@@ -518,7 +519,18 @@ GET /v1/restaurants/{restaurant_id}/profile_metadata       JWT
 GET /v1/brands/{uuid}/profile_metadata                     JWT
 ```
 
-`200` → the `*ProfileMetadata` message (shapes from protos, no live sample pulled yet):
+`200` → `{"response": <*ProfileMetadata>}` (`Get*ProfileMetadataResponse`). All three verified live on
+stage 2026-10-11. The public routes also accept the `X-API-TOKEN` header (not only basic auth). An
+unknown id is `400` `{"service":"user_svc_v2","description":"record not found"}`. Sample:
+
+```json
+{"response":{"uuid":"300169b3-…","display_name":"Abhijit Ghosh",
+ "display_image":{"file_path":"…/a385e3ba-….jpeg","preview_url":"https://static.stage.explorex.co.in/…"},
+ "experience_count":16,"verified_experience_count":6,"worth_it_count":13,"helpful_count":0,
+ "unhelpful_count":0,"impression_count":0,"follower_count":1,"following_count":7}}
+```
+
+Fields:
 
 - `UserProfileMetadata`: `uuid`, `display_name`, `display_image`, plus totals over the diner's
   published public experiences: `experience_count`, `verified_experience_count`,
