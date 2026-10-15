@@ -507,8 +507,9 @@ Authorization: $ACCESS_TOKEN
 ## 24. Profile metadata (user, restaurant, brand)
 
 Added 2026-10-08 (customer_gateway `feat/profile-metadata-routes` @ `fe6ac0a`, protos `8bc7853`,
-protos_dart `a0dbc6e`). The app calls the user and brand routes (protos_dart `v0.34.25`): Profile
-(own counts) and the diner/brand public profile. It does not call the restaurant route yet.
+protos_dart `a0dbc6e`). The app calls all three (protos_dart `v0.34.25`): user for Profile (own
+counts) and the diner's public profile, brand for the brand profile, and restaurant (since
+2026-10-11) for the place profile's counts strip, its `Experiences · n` and a cover fallback.
 
 ```
 GET /v1/public/users/{user_uuid}/profile_metadata          X-API-TOKEN
@@ -547,6 +548,134 @@ Fields:
 Follower/following counts are read from Redis on each call, not stored on the row. Restaurants and
 brands are followees only, so they have no following count. Counts are `uint32`; proto3 JSON
 renders them as numbers, unlike the string counts of §13 and §15, and omits zeros.
+
+Since protos `3fe8e2c5` / protos_dart `v0.34.32` (2026-10-14), `UserProfileMetadata` also carries the
+public social-ladder badge: `status_level`, `status_tier` (`UserStatusTier`) and `status_tier_name`
+(e.g. "Tastemaker II"). Exact Status XP is never on this response; it's on §26 for the diner only. The
+public diner profile's Level pill reads `status_level`.
+
+Since protos `581e3904` + `84395a77` / protos_dart `v0.34.35`–`v0.34.36` (2026-10-15; customer_gateway
+`471aed4` and restaurant_catalog_svc `d72d04b7` only bump protos), `RestaurantProfileMetadata` also carries
+the daily insights explorex-data-tools writes (IST): `worth_it` (`WorthItDto`: `score` 0–100,
+`score_date`, `recommend_count`, `not_recommend_count`, `decaying`), `worth_it_trend` (`WorthItTrendDto`:
+`direction`, `delta` = today − yesterday in points, `reason`, `points[]` of `{date, score}`, oldest first,
+up to 90 days), `experience_dna` (`ExperienceDnaDto`: `available` once 3 axes are eligible, `axes[]` of
+`{axis, mentions, positive, percent, eligible}`; axes SERVICE, FOOD, HYGIENE, AMBIENCE, VIBE, VALUE; an axis is
+eligible at 3+ mentions), and `outlet_avg_bill_90d` (paise) with its `_sample_size` / `_as_of_date`. The app
+(protos_dart `v0.34.37`) reads §24 beside every catalog place read (`RemoteDiscoveryRepository.restaurant`)
+and treats a place as unscored with no `score_date`, no trend points, or DNA not `available`.
+
+Captured live 2026-10-15 (public route, `X-API-TOKEN` + `x-app-name: elite-app-ios` + `x-app-version`; any
+other `x-app-name` is `403`). CBB2 `45e971cd-…`: `worth_it {score: 5, recommend_count: 13,
+not_recommend_count: 3, decaying: true}`, trend `FALLING`, `delta: 0`, reason "declining due to inactivity",
+45 points; DNA `available` with 5 eligible axes (HYGIENE 0 mentions); `outlet_avg_bill_90d: "21836"` paise
+(int64, so a JSON string) over 14 bills. Unscored places send `worth_it`/`worth_it_trend`/`experience_dna`
+as `null` and `outlet_avg_bill_90d: "0"` with an empty `_as_of_date`. User §24 now also sends
+`curation_count`.
+
+The app shows: `curation_count` as the Profile Curations cell and the public profile's "public lists";
+`outlet_avg_bill_90d` as `₹n avg bill` on the place title line (left out at 0); `direction` as
+"Rising" / "Falling" when `delta` is 0.
+
+**BE drift (2026-10-15):** `worth_it.score` doesn't match its own counts. CBB2 scores 5 with 13 of 16
+recommending, so the place shows "95% said Not worth it". La Casa and The Bier Library score 0 with 1
+recommend and 0 not. Decay seems to drive the score toward 0, while the app (and the design) read `score`
+as the share of diners who said Worth it. BE needs to confirm what `score` is. `direction: FALLING` with
+`delta: 0` is also unexplained.
+
+---
+
+## 26. Elite Token wallet (diner)
+
+Added 2026-10-14 (customer_gateway `686e438`, `pkg/handlers/user_token_wallet.go`; protos `3fe8e2c5`;
+protos_dart `v0.34.32`). user_svc owns the wallet and every amount. The app calls the four reads
+below (`RemoteWalletRepository`). It doesn't call debit: the only spend SKUs are Amplify tiers, and
+Amplify goes through feed_svc's routes (§27). All private, JWT (raw, no `Bearer`).
+All four answer `403` without a JWT on stage (deployed; an unknown path is `404`). Bodies not yet
+captured live with a diner token.
+
+```
+GET  /v1/token_wallet                          → GetUserTokenWalletByUserIdResponse
+GET  /v1/token_wallet/transactions?page=0&size=20  → SearchUserTokenWalletTransactionsResponse
+GET  /v1/token_wallet/earn_policy              → GetUserTokenWalletEarnPolicyResponse
+GET  /v1/token_wallet/transaction_item_rates   → GetAllUserTokenWalletTransactionItemRatesResponse
+POST /v1/token_wallet/debit                    DebitUserTokenWalletRequest (user_id set by the gateway)
+```
+
+`page`/`size` default to 0/20 when both are absent. Each body is `{"response": …}`; the ledger adds
+`page_response` (`total`, `has_next_page`).
+
+- `UserTokenWalletDto`: `token_balance`, `status`, and Status XP for the diner's own profile only:
+  `status_xp` (lifetime confirmed earn), `status_level`, `status_tier`, `status_tier_name`,
+  `xp_into_level`, `xp_to_next_level`. **Assumed:** `xp_to_next_level` is XP still needed (not the
+  band size); the bar is `into / (into + to_next)`. No BE doc pins this yet.
+- `UserTokenWalletTransactionDto`: `amount`, `remaining` (unspent part of a CREDIT lot; FIFO spend and
+  expiry), `transaction_type` (CREDIT / DEBIT), `transaction_item`, `reference_urn`, `description`,
+  `created_at`, `expires_at` (epoch ms), `counts_to_lifetime`.
+- `UserTokenWalletEarnPolicyDto`: `categories[]` (`transaction_item`, `amount`; the Elite-payment
+  formula uses `percent`, `cap`, `min_bill_amount` in ₹ with `amount` 0), `earn_title_min_runes`,
+  `earn_body_min_runes`, `earn_unverified_max_rolling_7d`, `earn_unverified_max_month`,
+  `earn_curation_max_month`, `earn_curation_min_members`, `earn_curation_min_experiences`,
+  `earn_token_expiry_ms`. The UI never hard-codes an amount; it reads this.
+- `UserTokenWalletTransactionItemRateDto`: `transaction_item`, `transaction_item_rate` (the spend
+  catalogue: `SPEND_AMPLIFY_QUICK` / `_MOMENTUM` / `_SPOTLIGHT`).
+
+Credits land as available balance at once (no pending state), so the app has no Pending figure. There
+is no Token store or top-up route, and no purchased/bonus lots.
+
+Drift from the app's earlier design model: the app's curation reward rule (title, description, cover,
+`CurationDraft.rewardSpots` = 5 places) predates the policy; user_svc's rule is
+`earn_curation_min_members` places and `earn_curation_min_experiences` experiences, capped
+`earn_curation_max_month`. The app shows the policy's amount but still checks its own rule. Unverified
+caps (`max_rolling_7d`, `max_month`) are user_svc-side, so the published screen shows what a post
+qualifies for, not whether this month's cap is spent.
+
+---
+
+## 27. Elite Amplify (diner)
+
+Added 2026-10-15 (customer_gateway PR #139; placement in feed_svc PRs #22–#24; protos_dart
+`v0.34.32`, `feedsvc.v1`). Any signed-in diner can sponsor (buy) an Amplify on any public
+**experience**, their own or someone else's. Buying debits the Token wallet (§26) at once. Amplify
+buys labelled extra distribution only. All private, JWT (raw, no `Bearer`). Captured live on stage
+2026-10-15 with the static stage OTP phone. The app calls these through `RemoteAmplifyRepository`.
+
+```
+GET  /v1/feed_posts/{feed_post_id}/amplify/eligibility  → GetAmplifyEligibilityResponse
+POST /v1/feed_posts/{feed_post_id}/amplify               CreateAmplifyRequest → CreateAmplifyResponse
+GET  /v1/amplifications/{uuid}                           → AmplificationDto
+PUT  /v1/amplifications/search                           ListAmplifiesRequest → ListAmplifiesResponse
+POST /v1/amplifications/{uuid}/stop                      → AmplificationDto (state STOPPED)
+```
+
+Bodies are bare (no `{"response": …}` wrapper). Create wraps its answer as `{"amplification": …}`; GET
+answers the bare DTO. Stop's success body is not captured yet (BE says it is the DTO; the app reads
+either shape). Stopping an amplification that already stopped answers `400`.
+
+- Eligibility: `eligible`, `reason_codes[]` (`NOT_FOUND` · `NOT_EXPERIENCE` · `NOT_PUBLIC` ·
+  `QUEUE_FULL`), `queue_depth`, and `tiers[]` (`AmplifyTierInfo`: `tier`, `token_price`,
+  `duration_days`, `target_impressions`, `available`, `unavailable_reason`). Tiers are always listed,
+  even when not eligible. Stage today: Quick 150 / 3 days / 250 · Momentum 350 / 7 / 750 ·
+  Spotlight 700 / 14 / 2000. The UI reads these, never hard-codes them.
+- Create body: `{"tier": "AMPLIFY_TIER_QUICK", "idempotency_key": "…"}`. The same key returns the same
+  amplification, so the app keeps one key per sheet and tier and reuses it on retry.
+- `AmplificationDto`: `uuid`, `feed_post_id`, `sponsor_user_id`, `author_urn`, `tier`, `state`
+  (`SCHEDULED` = queued behind a live one, max 3 per post · `ACTIVE` · `PAUSED` · `COMPLETED` · `STOPPED`
+  · `TERMINATED`), `token_price`, `target_impressions`, `delivered_impressions`, `start_at`, `end_at`,
+  `original_end_at` (epoch ms), `extension_count`, `queue_position`, `restaurant_id`,
+  `idempotency_key`, `created_at`, `end_reason` (`"stopped"` after a stop).
+- Search body: one of `{"as_sponsor": true}` (my purchases), `{"as_author": true}` (Amplifies on my
+  posts), `{"feed_post_id": "…"}` (every sponsor's, on that post); optional `page_request`. The app
+  reads `feed_post_id` and keeps the rows whose `sponsor_user_id` is the wallet's `user_id`. Profile's
+  `This month` card sends `as_sponsor` and counts the rows whose `created_at` is in this calendar month
+  (first page only; no date filter on the request).
+- Placement (§2, §3, §23 and the public follow feed): every 5 cards are 3 organic + 2 amplified;
+  amplified posts carry `FeedPostDto.amplification_id` + `amplify_sponsor`. Organic results exclude
+  ACTIVE amplified posts. The app does not label amplified feed cards yet.
+
+**BE drift:** buying with too few Tokens answers **HTTP 500** `{"service": "user_svc_v2", "code":
+"30", "description": "insufficient Elite Token balance"}`, not a 4xx. The app checks the balance before
+buying and treats a 500 from create as a failed buy.
 
 ---
 
@@ -616,7 +745,7 @@ happening on those same routes. The Home stories rail is §23 (one bubble per fo
 
 ## Still absent from both documented lists
 
-Not in §1–24 and not in dine-in `main` @ `b971951`. The app shows an empty state or
+Not in §1–26 and not in dine-in `main` @ `b971951`. The app shows an empty state or
 "coming soon" for these, never demo data (`lib/core/di/injection.dart`).
 
 A server flag for the phase 3 tour is not a gap. The tour-seen flag stays on the device, and a reinstall may show the tour again (2026-10-01). No field is named for one. Repeating `PUT /v1/follows` or `PUT /v1/feed_posts/{uuid}/reaction` is not known to be safe. Duplicates are tolerated for now (2026-10-01).
@@ -624,19 +753,26 @@ A server flag for the phase 3 tour is not a gap. The tour-seen flag stays on the
 | Area | What's missing | App seam today |
 |---|---|---|
 | Auth | Handle availability | Pending from BE (2026-10-01). The handle issue is expected to go away once it ships. `AuthRepository.isHandleAvailable` (always true). No path captured |
-| Profile | Another user's public profile beyond §24's name, image and totals | — |
-| Profile | Analysis metrics beyond §24's totals | Computed from loaded posts; §24 totals not wired yet (2026-10-08) |
-| Restaurants | Experience DNA + verified-experience count (§24 has `experience_about_count`, not a verified count) | `RestaurantSummary.dna` null |
-| Restaurants | Live Vibe | `/restaurant/:id/vibe` empty |
-| Restaurants | Reserve a table | Toast |
+| Profile | Another user's public profile beyond §24's name, image and totals (bio) | — |
+| Profile | Per-month counts: verified experiences and helpful this month (§24 has lifetime totals only) | `This month` cards show FE/NA |
+| Profile | Aggregated top tags (post `enrichment.tags` also carry moderation tags such as `nsfw`) | Analysis "Top tags · FE/NA" |
+| Tokens | Loyalty balance; an earn category for completing the profile | FE/NA on the token card and the Verified screens |
+| Restaurants | Verified-experience count (§24 has `experience_about_count`, not a verified count) | DNA correction "one mention among FE/NA" |
+| Restaurants | Opening hours: `RestaurantDto.restaurant_timings` exists but is absent from the diner catalog GET | "Open till FE/NA" |
+| Restaurants | Rolling 30-day experience count; diners served | Trend card "Last 30 days" and curation detail "diners served" FE/NA |
+| Restaurants | Deals / offers, loyalty programme | Place benefits rows FE/NA |
+| Restaurants | Live Vibe outside a live table | "No update" |
+| Restaurants | Reserve a table (`booking_svc` protos exist, no gateway route) | `UnavailableReservationRepository` (FE/NA) |
+| Pay | Pay at a place / the bill after a reservation | `UnavailableBillRepository` (FE/NA); the at-table pay is the real dine-in pay |
+| Elara | Any assistant endpoint | `UnavailableElaraRepository` (FE/NA) |
 | Feed | Guest-readable single post | `GET` §8 requires a JWT |
 | Feed | Edit route (`PUT /v1/feed_posts/{uuid}`) | Edit hidden except for the author, and the route is not captured |
 | Feed | Drafts, report-post | Guests get no server drafts (2026-10-01). Signed-in server drafts come later. In-memory drafts; no report. No draft route captured |
 | Feed | Search must hide soft-deleted posts | §21 bug |
 | Create | Happening / restaurant-story sample body | No happening create sample; the stories rail is §23 |
-| Create | Enrichment trait read-back | "What we read" card hidden |
+| Create | Enrichment trait read-back at publish (`enrichment.experience_dna_axes` lands later, async) | "What we read" card FE/NA |
 | Create | `cover_media_id` echo, Google-place import | Cover re-uploaded; non-partner places deferred |
 | Create | Bill-photo (OCR) visit verification; a partner flag on `ComposerRestaurantHit` | Google and non-partner picks show "Upload your bill · FE/NA"; partner = catalog hit |
 | Create | `image` on Google `ComposerRestaurantHit`s (catalog fetches the Places photo only at ensure/create time) | No image: the app doesn't call Google Places for a photo (removed 7 Oct 2026), so the hit shows the restaurant's initial until BE sends an `image` |
-| Tokens | Balance, ledger, Amplify | Wallet card hidden; "Amplify is coming soon." |
+| Tokens | Token store / top-up | Wallet live on §26 (2026-10-14); Amplify live on §27 (2026-10-15); no Top up |
 | Other | Push registration, city list / geocode | No push; fixed Bengaluru lat/lng |

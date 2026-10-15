@@ -82,7 +82,7 @@ groups below were rebuilt from the screen ids, and they follow the prototype's r
 | `create-narrate` | Create step 3 narrate | sa | `create_post/…/narrate_step.dart` |
 | `create-curation-pick` | Add to curation | sa | `curation/…/save_to_curation_sheet.dart` |
 | `create-success` | Published | sa | `create_post/…/published_step.dart` |
-| `create-amplify` | Amplify prompt | sa | `create_post/…/amplify_sheet.dart` |
+| `create-amplify` | Amplify prompt | sa | `amplify/…/amplify_sheet.dart` |
 | `create-axis-edit` | Edit inferred axes | sa | `create_post/…/axis_edit_screen.dart` |
 
 ## 8 · Reserve (2)
