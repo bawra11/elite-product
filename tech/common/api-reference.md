@@ -679,6 +679,60 @@ buying and treats a 500 from create as a failed buy.
 
 ---
 
+## 25. Unified search
+
+customer_gateway `GlobalSearchHandler` (PR #132; catalog global dish search #579–#581). One query
+across six verticals, one section per vertical. The app's Search screen and Home's search CTA use it
+(`GlobalSearchRemoteDataSource`); guests use the public route.
+
+```
+PUT /v1/search            JWT
+PUT /v1/public/search     X-API-TOKEN (+ x-app-name / x-app-version)
+
+{"query":"ctb","verticals":["dishes","restaurants","users","experiences","curations","happenings"],
+ "page_size":5,"user_location":{"latitude":12.97,"longitude":77.59},"visibility_tags":["ALL"]}
+```
+
+`200` → a gateway-built JSON object (no proto wraps it): `{<vertical>: {items: [...], total}}` for each
+vertical asked, or `{<vertical>: {error: "…"}}` when that vertical failed on BE (the others still
+answer). Items are protos: `RestaurantDtoV2`, `DishMenuDto` (with `restaurant_name`, hydrated from
+Redis), `UserDto`, `FeedPostDto`. `user_location` is required for restaurants and every feed vertical.
+The app parses each item on its own (a bad hit is skipped) and drops the feed `embedding`. Verified
+live on stage 2026-10-15.
+
+---
+
+## 28. Follower / following lists (not used by the app yet)
+
+customer_gateway PR #142 (protos `5e90ce70`). Paged with `?page=&size=`; following also takes
+`follow_type`. Bodies are bare (no `response` wrapper).
+
+```
+GET /v1/public/users/{user_uuid}/followers           X-API-TOKEN   (JWT: /v1/users/…)
+GET /v1/public/users/{user_uuid}/following[?follow_type=]
+GET /v1/public/users/{user_uuid}/following_count
+GET /v1/public/restaurants/{restaurant_id}/followers
+GET /v1/public/restaurants/{restaurant_id}/following
+GET /v1/public/restaurants/{restaurant_id}/following_count
+```
+
+Captured live 2026-10-15: `{"followers": [{"follower_urn", "created_at", "user": UserProfileMetadata}]}`,
+so each row carries the follower's name, image, counts and ladder badge. Profile's Followers cell still
+toasts "coming soon"; this is the route a followers list would read.
+
+## Feed moderation (feed_svc, 2026-10-15)
+
+protos `9199c740` (#1170): feed_svc now runs async UGC moderation (text + images) before enrich and
+publish. `FeedPostStatus` gains `FEED_POST_STATUS_PENDING_MODERATION` (4, not discoverable yet) and
+`FEED_POST_STATUS_REJECTED` (5), and `meta_data.moderation` (`FeedPostModeration`: `decision`
+ALLOW / REVIEW / HIDE, `version`, `decided_at`, text and per-asset results, `enforced`) is on the post.
+Enforcement is on in stage. The app doesn't read `post_status` beyond PUBLISHED yet, so a just-created
+post that is still pending, or rejected, is not told apart on Profile. Post `enrichment.tags` can also
+carry moderation labels (`nsfw` seen on stage). feed_svc PR #25 / catalog `AdjustRestaurantFeedProfileCounts`
+keep the §24 per-type counts in step with deletes and moderation.
+
+---
+
 ## Phase01 endpoint set
 
 phase01 calls the union of two lists. This environment cannot read `explorexinc/elite`
@@ -716,6 +770,9 @@ General diner sign-in on phase01 is phone number + OTP (`POST /dd/v1/authenticat
 | §22 | `/dd/v1/restaurant_catalog/restaurants/composer_search` | PUT | JWT |
 | §24 | `/v1/public/{users,restaurants,brands}/{id}/profile_metadata` | GET | `X-API-TOKEN` |
 | §24 | `/v1/{users,restaurants,brands}/{id}/profile_metadata` | GET | JWT |
+| §25 | `/v1/search`, `/v1/public/search` | PUT | JWT / `X-API-TOKEN` |
+| §26 | `/v1/token_wallet`, `/transactions`, `/earn_policy`, `/transaction_item_rates` | GET | JWT |
+| §27 | `/v1/feed_posts/{id}/amplify[/eligibility]`, `/v1/amplifications/{search,{uuid},{uuid}/stop}` | GET/POST/PUT | JWT |
 | main | `/dd/v1/authentication/otps` | POST | none |
 | main | `/dd/v1/login/otp` | PUT | none |
 | main | `/dd/v1/register/otp` | POST | none |
@@ -774,5 +831,4 @@ A server flag for the phase 3 tour is not a gap. The tour-seen flag stays on the
 | Create | `cover_media_id` echo, Google-place import | Cover re-uploaded; non-partner places deferred |
 | Create | Bill-photo (OCR) visit verification; a partner flag on `ComposerRestaurantHit` | Google and non-partner picks show "Upload your bill · FE/NA"; partner = catalog hit |
 | Create | `image` on Google `ComposerRestaurantHit`s (catalog fetches the Places photo only at ensure/create time) | No image: the app doesn't call Google Places for a photo (removed 7 Oct 2026), so the hit shows the restaurant's initial until BE sends an `image` |
-| Tokens | Token store / top-up | Wallet live on §26 (2026-10-14); Amplify live on §27 (2026-10-15); no Top up |
-| Other | Push registration, city list / geocode | No push; fixed Bengaluru lat/lng |
+| Tokens | Token store / top-up | Wallet live on §26 (2026-10-14); Amplify live on §27 (2026-10-15); no Top up || Other | Push registration, city list / geocode | No push; fixed Bengaluru lat/lng |

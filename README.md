@@ -15,6 +15,7 @@ Elite/
   tech/
     codebase/         — code, one submodule per repo
       elite_app/      — Flutter app (read-write)
+      current-prod/   — the live production app (explorexinc/elite-app), for reference
       BE/             — backend repos (READ-ONLY, see below)
     common/           — cross-codebase tech context: API reference, domain model, architecture
 ```
@@ -24,6 +25,7 @@ Elite/
 | Path | Repository | Branch | Access |
 | --- | --- | --- | --- |
 | `tech/codebase/elite_app` | explorexinc/elite | `phase01` | read-write |
+| `tech/codebase/current-prod` | explorexinc/elite-app | `main` | read-write |
 | `tech/codebase/BE/customer_gateway` | explorexinc/customer_gateway | `stage` | read-only |
 | `tech/codebase/BE/feed_svc` | explorexinc/feed_svc | `stage` | read-only |
 | `tech/codebase/BE/restaurant_catalog_svc` | explorexinc/restaurant_catalog_svc | `stage` | read-only |

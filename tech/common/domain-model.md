@@ -39,6 +39,7 @@ Delete and edit render only when the signed-in diner's URN matches `author_urn`
 | `bottom_bar_action` | nullable | unconfirmed shape — likely a CTA descriptor |
 | `enrichment` | `Enrichment?` | **nullable** — null when AI enrichment hasn't run yet/failed. UI must handle null (don't show tag chips) |
 | `helpful_count`, `unhelpful_count` | number | |
+| `moderation` | `FeedPostModeration?` | async UGC moderation result (`decision` ALLOW / REVIEW / HIDE). `post_status` can now be `PENDING_MODERATION` or `REJECTED` (2026-10-15) |
 
 ### `Enrichment`
 | Field | Type | Notes |
@@ -49,6 +50,7 @@ Delete and edit render only when the signed-in diner's URN matches `author_urn`
 | `keywords` | string[] | extracted phrases |
 | `embedding` | float[] | 768-dim, **never render or log in full** — used server-side for similarity search only; client should treat as opaque/drop it if present |
 | `analyzed_at`, `enriched_at` | string (epoch ms) | |
+| `experience_dna_axes` | array | per-axis `{axis, mentioned, polarity}` from AI enrich; feeds the daily restaurant DNA roll-up, never shown on the post |
 
 ### `ExperiencePayload` (`payload.experience`)
 | Field | Type | Notes |
@@ -109,10 +111,28 @@ domain layer should not offer a "list all follows regardless of type" convenienc
 BE adds one.
 
 ### `UserProfileMetadata`, `RestaurantProfileMetadata`, `BrandProfileMetadata`
-BE added 2026-10-08 (`api-reference.md` §24, protos `8bc7853`); not yet wired in the app.
-One read per profile gives name, image and totals over published public posts, plus live
-follower (and, for users, following) counts from Redis. These counts are `uint32` numbers,
-not the string counts of §13/§15. Prefer them over counting loaded posts once wired.
+BE added 2026-10-08 (`api-reference.md` §24); wired in the app as the protos themselves (no
+local entity). One read per profile gives name, image and totals over published public posts,
+plus live follower (and, for users, following) counts from Redis. These counts are `uint32`
+numbers, not the string counts of §13/§15. Every count on a profile comes from here or shows
+FE/NA; the app never counts loaded pages.
+
+- User: also `curation_count` and the public ladder badge (`status_level`, `status_tier`,
+  `status_tier_name`).
+- Restaurant: also the daily insights: `worth_it` (`score` 0–100 + recommend / not-recommend
+  counts, `decaying`), `worth_it_trend` (`direction`, `delta`, `reason`, up to 90 daily points),
+  `experience_dna` (`available`, six axes with mentions / positive / percent / eligible) and
+  `outlet_avg_bill_90d` (paise). `RestaurantSummary` folds these in (`withProfileMeta`).
+
+### `UserTokenWalletDto` and friends (Elite Tokens, §26)
+Protos used directly, with read-only view extensions in `lib/domain/entities/wallet.dart`:
+balance, Status XP and level band (own profile only), the ledger, and the earn policy that
+every earn amount in the UI reads (never hard-coded). Credits land at once; no pending state.
+
+### `AmplificationDto`, `AmplifyTierInfo` (Elite Amplify, §27)
+Protos used directly (`lib/domain/entities/amplify.dart`). Any signed-in diner sponsors an
+Amplify on any public experience; tiers, prices and reach come from eligibility. Amplify buys
+labelled extra distribution only and never touches DNA, Worth It or organic rank.
 
 ## Unconfirmed entities (no API sample yet)
 
@@ -149,8 +169,8 @@ Implemented in `elite_app/lib/domain/entities/discovery.dart` and
 entity maps to a future endpoint behind `DiscoveryRepository`, so screens won't change
 when the real API lands.
 
-- `RestaurantSummary`: the diner-facing slice of a restaurant (name, area, cuisine, hero/logo, recommended, DNA, amenities, live vibe). Lookup by id is `GET /dd/v1/public/restaurant_catalog/restaurants/{id}` (phase01 catalog). DNA and live vibe are still missing. Feed posts carry only `restaurant_id`.
-- `ExperienceDna` / `DnaAxis`: working assumption — restaurant only, and only after 100 verified experiences. 3–6 axes, mention-weighted percentages, verified count, summary. Never on an individual experience.
+- `RestaurantSummary`: the diner-facing slice of a restaurant (name, area, cuisine, hero/logo, Worth It score and trend, DNA, amenities, live vibe). Lookup by id is `GET /dd/v1/public/restaurant_catalog/restaurants/{id}` (phase01 catalog), read beside the place's §24 profile metadata for the insights. Opening hours and a verified-experience count are still missing (FE/NA). Feed posts carry only `restaurant_id`.
+- `ExperienceDna` / `DnaAxis`: restaurant only, never on an individual experience. Built from §24 `experience_dna` once BE marks it `available` (3+ eligible axes; an axis is eligible at 3+ mentions); the place shows no DNA before that. Axes SERVICE, FOOD, HYGIENE, AMBIENCE, VIBE, VALUE; only eligible ones are drawn.
 - `Curation` / `CurationSpot` / `CuratorSummary`: up to 15 spots; each spot has a note, verified-visited and promoted flags. The wire payload is confirmed (§7); these richer spot fields are still frontend-only.
 - `RestaurantStory`: restaurant-authored happening, with media, dish tags and an offer.
 - `StoryRing`: the Home stories rail, one ring per followed author from `PUT /v1/feed_posts/following/grouped_by_author` (§23). The ring opens that author's best post. Guests get an empty rail.

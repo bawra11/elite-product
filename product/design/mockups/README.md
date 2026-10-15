@@ -20,10 +20,10 @@ groups below were rebuilt from the screen ids, and they follow the prototype's r
 
 | Screen id | Label | Source | Flutter |
 | --- | --- | --- | --- |
-| `auth-phone` | Phone gate | main | `auth/…/auth_flow_screen.dart` |
-| `auth-otp` | OTP | main | `auth/…/auth_flow_screen.dart` |
+| `auth-phone` | Phone gate | main | `auth/…/auth_flow_sheet.dart` (bottom sheet, no route) |
+| `auth-otp` | OTP | main | `auth/…/auth_flow_sheet.dart` (bottom sheet, no route) |
 | `auth-name` | Landing name and handle | main | `onboarding/…/name_screen.dart` |
-| `auth-gate` | Auth gate sheet | main | `auth/…/auth_flow_screen.dart` |
+| `auth-gate` | Auth gate sheet | main | `auth/…/auth_flow_sheet.dart` (bottom sheet, no route) |
 | `auth-verified` | Verified | main | `auth/…/verified_views.dart` |
 | `auth-profile-30` | Profile 30 percent | main | `auth/…/verified_views.dart` |
 | `auth-profile-100` | Profile complete | main | `auth/…/verified_views.dart` |
@@ -71,7 +71,7 @@ groups below were rebuilt from the screen ids, and they follow the prototype's r
 | `dna-sheet` | DNA sheet | sa | `restaurant_detail/…/dna_sheet.dart` |
 | `live-vibe` | Live Vibe | sa | `live/…/live_vibe_screen.dart` |
 | `live-menu` | Live Menu | sa | `dine_in/menu/…/live_menu_page.dart` |
-| `dish-detail` | Dish page | sa | `live/…/dish_detail_screen.dart` |
+| `dish-detail` | Dish page | sa | dine-in live menu dish card (`/dish` redirects to the menu) |
 
 ## 7 · Create experience (7)
 

@@ -67,9 +67,16 @@ route stays reachable without a session, and Live Menu stays open to guests. Inl
 still call `requireVerified` at the tap. `AuthBloc` exposes a session state (`guest` /
 `phase1Named` / `authenticated`) that the router redirect reads.
 
-`requireVerified` waits on a ticket the auth flow closes, not on the pushed route's result:
-signing in refreshes the router, and go_router rebuilds a pushed route on a refresh, which
-orphaned the awaited push (the action never resumed after the gate).
+The auth flow is a bottom sheet, never a route (2026-10-12): gate → number → code → verified →
+profile or tour all run in one `AuthSheetRoute` over the screen the diner is on, opened only
+through `showAuthGate`. There is no `/auth` route. `requireVerified` waits on a ticket the auth
+flow closes, not on a pushed route's result: signing in refreshes the router, and go_router
+rebuilds a pushed route on a refresh, which orphaned the awaited push (the action never
+resumed after the gate).
+
+Every endpoint path lives in `lib/core/network/api_endpoints.dart` with its `§n` ref to
+`api-reference.md`; nothing else spells a path. Search (Home's CTA and the Search screen) is the
+gateway's unified search (§25), one request across dishes, places, people and the feed.
 
 The diner's own publishes and deletes go out on `FeedChanges` (announced by the feed
 repository). Home, its curation rail and My curations listen, so a new post is on Profile at
@@ -89,6 +96,19 @@ icon (scan with no visit, cart with one). Creating a curation pops back to the o
 screen; My curations is only the destination when that is where Curate started. The nav bar's +
 follows the tab: on Experience or Curation it opens that flow directly; on Home or Profile it
 opens the Share something sheet.
+
+## Insights, Tokens and Amplify (2026-10-15)
+
+A place's Worth It score, its trend and its Experience DNA are BE's daily insights on §24
+profile metadata, read beside every catalog place read. The app draws them (score chip, trend
+card with a range menu and scrubbable chart, the DNA gem and sheet) and computes none of them.
+Elite Tokens live on user_svc (§26): `WalletCubit` reads balance, Status XP, the ledger and the
+earn policy, and every earn amount in the UI comes from that policy. Amplify (§27) is a sheet
+from an experience's detail or the Published step (`AmplifyCubit`); it checks the balance
+before buying and reuses one idempotency key per sheet and tier.
+
+Where BE has no data the screen shows the literal FE/NA, never a stand-in; the open list for BE
+is the "Still absent" table in `api-reference.md`.
 
 ## Testing
 
