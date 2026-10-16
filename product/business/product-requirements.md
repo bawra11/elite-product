@@ -64,8 +64,8 @@ Design implication: the app must support a **guest/anonymous session** that can 
 2. **Experience** (tab 2) — same list UI as Home, filtered to `post_type: EXPERIENCE` only.
 3. **Create** (tab 3) — not a screen, a CTA/action sheet: "create Experience" or "create Curation."
 4. **Curation** (tab 4) — same list UI as Home, filtered to curations only.
-5. **Profile** (tab 5) — current user's profile. The basic user profile view is not gated, but any private information or analytics on the profile is gated behind sign-in.
-   - User details (public fields, private fields, dynamic/semi-dynamic fields e.g. membership status, visit stats). Private fields are gated. This list does not decide which dynamic fields are private.
+5. **Profile** (tab 5) — current user's profile. The basic user profile view is not gated, but any private information or analytics on the profile is gated behind sign-in. Guests (not signed in) can see a user's name, handle, and the Experiences and Curations tabs. Stats, Elite Tokens, Analysis and Memberships stay locked until sign-in.
+   - User details (public fields, private fields, dynamic/semi-dynamic fields e.g. membership status, visit stats). Private fields are gated. Superseded 2026-10-01: this list does not decide which dynamic fields are private. Memberships are locked for guests.
    - Analysis (personal stats/insights — exact metrics TBD) is analytics and is gated behind sign-in.
    - Two sub-tabs: **Experiences** and **Curations** created by this user.
 
@@ -107,7 +107,7 @@ Track these in `tech/common/domain-model.md` under "Unconfirmed" and revisit as 
 - **2026-10-01 · Auth.** The WhatsApp magic link is a sign-in method. It is the forced (preferred) sign-in for dine-in and paid-QSR, so BE can use WhatsApp's customer-service window to message the user on WhatsApp. General diner sign-in, outside those flows, is phone number + OTP. The magic link is not a general option on the diner phone sheet. This supersedes the 2026-09-26 auth note, which limited the link to the dine-in deep link.
 - **2026-10-01 · OTP length.** The OTP is 6 digits for now. That length is the current value from the OTP provider and may change, so clients must not hard-code it.
 - **2026-10-01 · Live Menu and Live Vibe.** Live Menu is open to guests. Live Vibe needs sign-in.
-- **2026-10-01 · Profile.** The basic user profile view is not gated, but any private information or analytics on the profile is gated behind sign-in. Which fields count as private is not decided here.
+- **2026-10-01 · Profile.** The basic user profile view is not gated, but any private information or analytics on the profile is gated behind sign-in. Guests (not signed in) can see a user's name, handle, and the Experiences and Curations tabs. Stats, Elite Tokens, Analysis and Memberships stay locked until sign-in. Decision from Abhijit Ghosh (Product). Superseded 2026-10-01: which fields count as private is not decided here. Superseded 2026-10-01: membership fields are not classified as private.
 - **2026-10-01 · Tour seen.** The phase 3 tour-seen flag stays on the device. A reinstall may show the tour again. No server flag. This supersedes the phase 3 line that showed the tour once after the first successful verification and not on later logins.
 - **2026-10-01 · Repeat follow and reaction.** Follow and reaction calls may not be safe to repeat. Duplicates are tolerated for now.
 - **2026-10-01 · Drafts.** Guests get no server drafts. Server drafts for signed-in users come later. No draft route is named.

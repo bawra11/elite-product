@@ -1,15 +1,15 @@
 # Profile, follow, and block
 
-The basic user profile view is not gated, but any private information or analytics on the profile is gated behind sign-in. This note does not decide which fields count as private.
+The basic user profile view is not gated, but any private information or analytics on the profile is gated behind sign-in. Guests (not signed in) can see a user's name, handle, and the Experiences and Curations tabs. Stats, Elite Tokens, Analysis and Memberships stay locked until sign-in. Superseded 2026-10-01: this note does not decide which fields count as private. Superseded 2026-10-01: membership fields are not classified as private.
 
 A guest who opens the tab sees the basic profile. "Verify my number" opens `auth-phone` for the gated parts. Analysis is analytics: the share they called Worth it, how many diners found them helpful, and their most frequent tags. With no experiences it is an empty state. Analysis is gated.
 
 ```mermaid
 flowchart TD
   tab["Profile tab"] --> basic["Basic profile view"]
-  basic --> details["Public fields; membership fields are not classified here"]
-  basic --> private["Private information, gated"]
-  basic --> analysis["Analytics, gated"]
+  basic --> details["Name and handle"]
+  basic --> private["Stats, Elite Tokens, Memberships, gated"]
+  basic --> analysis["Analysis, gated"]
   private --> gate{Signed in?}
   analysis --> gate
   gate -->|No| auth["auth-phone"]
