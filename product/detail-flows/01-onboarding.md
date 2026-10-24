@@ -2,7 +2,7 @@
 
 Phase 1 does not ask for a phone number. The tutorial runs once, before Home. Each tutorial slide in the prototype can skip to Home.
 
-The handle availability check is pending from BE. The handle issue is expected to go away once it ships. Once that check exists, a typed handle that already exists shows "Already have an account? Sign in" on `auth-name`. Until then that CTA is not shown. No path is named for the check.
+The handle is checked against BE as it is typed (live 2026-10-24, api-reference §28). On `auth-name`, a typed handle that already exists shows "Already have an account? Sign in", which opens phone + OTP sign-in. The handle is claimed for the account at the first sign-in.
 
 ```mermaid
 flowchart TD

@@ -9,6 +9,7 @@
 - **Routing:** `go_router` — declarative, supports the guest→authenticated redirect logic onboarding needs (see product-requirements.md phase 1–3) and deep links into restaurant/post detail from push notifications later.
 - **Local storage/secure storage:** `flutter_secure_storage` for tokens (Keychain/Keystore-backed), `hive` (or `drift` if relational queries end up needed for offline feed caching) for everything else — never store JWTs in plain SharedPreferences.
 - **Codegen:** `freezed` + `json_serializable` for immutable entities/DTOs and union types (e.g. `FeedPost.payload` is a natural `freezed` union over post_type).
+- **Analytics:** Firebase Analytics through `FirebaseAnalyticsService`. The PRD §43 events live in `EliteAnalyticsEvents` and are fired with `analyticsTrack`. Impressions use `TrackImpression`, which logs once per mount when the widget is half on screen.
 - **Animations:** `flutter_animate` for micro-interactions (reaction taps, list item entrance, tab transitions) layered on top of standard `AnimatedContainer`/`Hero`/implicit animations — avoid hand-rolled `AnimationController` boilerplate except where a custom curve/physics is genuinely needed (e.g. a bespoke "worth it" toggle gesture).
 
 ## Layering (per feature module)
@@ -78,6 +79,15 @@ Every endpoint path lives in `lib/core/network/api_endpoints.dart` with its `§n
 `api-reference.md`; nothing else spells a path. Search (Home's CTA and the Search screen) is the
 gateway's unified search (§25), one request across dishes, places, people and the feed.
 
+The handle (api-reference.md §28) is checked live on the name screen while the diner is still a guest, and is
+kept on the device until the first sign-in. `SessionCubit.syncHandle` runs after every sign-in and for a session
+restored at launch. The account's username on BE wins; a handle that only the device has is claimed with
+`PUT /v1/users/current/username`; a failed call is retried on the next sign-in or launch. When a taken
+handle leads to "Already have an account? Sign in", the name screen finishes naming only after the auth sheet
+closes. Finishing it earlier would let the router redirect move the route out from under the sheet. Diners
+appear as their picture and `@username` wherever they show beside their picture (display name when they
+have none).
+
 The diner's own publishes and deletes go out on `FeedChanges` (announced by the feed
 repository). Home, its curation rail and My curations listen, so a new post is on Profile at
 once and a deleted curation leaves every list. Hive keeps auth state only. Curation drafts,
@@ -88,7 +98,8 @@ the foreground, and on pull-to-refresh; a failed read keeps what is shown. Each 
 by `post_types` with its own cursor (`AuthorPostsCubit`), paging on scroll; another diner's
 profile reads both tabs the same way when it opens. A place profile's Experiences tab is the same
 paged list by `restaurant_id` (`PostListCubit`, `feed_shared`), drawn as the design's feed cards
-without the place strip or place photo. Edit on posts is hidden until feed_svc has an update route.
+without the place strip or place photo. Edit on posts stays hidden until customer_gateway exposes feed_svc's
+`UpdateFeedPost` (api-reference.md "Still absent").
 Follow is hidden on the diner's own account, and the Block CTA is hidden everywhere for now.
 
 Place profile's sticky bar is Reserve Table + Place Pay. Order-at-table is the top-right

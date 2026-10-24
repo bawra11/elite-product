@@ -218,6 +218,10 @@ PUT /v1/feed_posts/file_uploads
 The URL expires in **300 s**, so request it right before uploading and never cache it.
 Observed file types: `UPLOAD_FILE_TYPE_JPEG`, `UPLOAD_FILE_TYPE_MP4`.
 
+`PUT /v2/feed_posts/file_uploads` (customer_gateway `2779031`, 2026-10-22; feed_svc `21e28d5`) is the same
+call, with object names stored under `az/` (Azure). `PUT /dd/v2/users/current/file_upload` does the same for
+the profile photo (gateway `b3b39cb`). The app still calls the v1 routes.
+
 ## 5. Upload media bytes to `pre_signed_url`
 
 Step 2. Straight to S3, not through the gateway. `Content-Type` must match the signed
@@ -700,9 +704,48 @@ Redis), `UserDto`, `FeedPostDto`. `user_location` is required for restaurants an
 The app parses each item on its own (a bad hit is skipped) and drops the feed `embedding`. Verified
 live on stage 2026-10-15.
 
+Since customer_gateway `534abdc` and restaurant_catalog_svc `4eb70598` (2026-10-16), dish search gets
+`user_location` and only returns dishes from nearby restaurants with a live menu. The `users` section's
+`UserDto` carries `username` (§28), and a query matches it (`qadiner0303` finds that diner, captured
+2026-10-24).
+
 ---
 
-## 28. Follower / following lists (not used by the app yet)
+## 28. Username (diner handle)
+
+Added 2026-10-16 (customer_gateway PR #143 `256ecd8`; protos `89c31354`; protos_dart `v0.34.41`, the
+app pins `v0.34.43`). Phone stays the account key; the username is an optional public handle.
+
+```
+PUT /v1/public/users/username/availability   CheckUsernameAvailabilityRequest   X-API-TOKEN
+PUT /v1/users/username/availability          (same)                             JWT
+PUT /v1/users/current/username               SetUsernameRequest → UserResponse  JWT (user from the JWT)
+GET /v1/public/users/by_username/{username}  → UserResponse                     X-API-TOKEN
+GET /v1/users/by_username/{username}         → UserResponse                     JWT
+```
+
+Availability is advisory (nothing is held). Body `{"username": "…"}`; the answer is bare
+`CheckUsernameAvailabilityResponse` (no `response` wrapper): `available`, `reason`
+(`USERNAME_AVAILABILITY_REASON_AVAILABLE` · `TAKEN` · `INVALID_FORMAT` · `RESERVED`) and
+`normalized_username` (lowercased). Captured live on the public route 2026-10-24: `AbCd` → `abcd`
+available; `admin`, `elite`, `explorex`, `support`, `root`, `null` reserved. The format BE accepts:
+3–30 characters of `a-z 0-9 _ .`, a digit may lead (`1abc`, `123` are valid), no leading or
+trailing `_` / `.`, no `__` or `..` (`a._b` is valid). The first claim is free; changes respect a
+cooldown. The by-username lookup blanks phone, Razorpay and Firebase ids; an unknown name is **HTTP
+500** `{"code": "37", "description": "user not found for username"}`, not a 404.
+
+Where the handle comes back: `UserDto.username` (§20 `users/current`, search users, by-username) and
+`UserProfileMetadata.username` (§24, and so `FeedPostAuthorDto.profile_meta.user` on every feed post
+and `FollowerDto.profile_meta.user`, §29). Empty when unclaimed.
+
+The app checks availability on the name screen (public route, debounced), claims the typed handle
+right after the first sign-in when the account has none (`SessionCubit.syncHandle`), and otherwise
+adopts the account's username. Diners show as their picture and `@username` (display name when they
+have none); profile headers show the name with `@username` under it. The app doesn't call by-username.
+
+---
+
+## 29. Follower / following lists (not used by the app yet)
 
 customer_gateway PR #142 (protos `5e90ce70`). Paged with `?page=&size=`; following also takes
 `follow_type`. Bodies are bare (no `response` wrapper).
@@ -773,6 +816,8 @@ General diner sign-in on phase01 is phone number + OTP (`POST /dd/v1/authenticat
 | §25 | `/v1/search`, `/v1/public/search` | PUT | JWT / `X-API-TOKEN` |
 | §26 | `/v1/token_wallet`, `/transactions`, `/earn_policy`, `/transaction_item_rates` | GET | JWT |
 | §27 | `/v1/feed_posts/{id}/amplify[/eligibility]`, `/v1/amplifications/{search,{uuid},{uuid}/stop}` | GET/POST/PUT | JWT |
+| §28 | `/v1/public/users/username/availability` | PUT | `X-API-TOKEN` |
+| §28 | `/v1/users/current/username` | PUT | JWT |
 | main | `/dd/v1/authentication/otps` | POST | none |
 | main | `/dd/v1/login/otp` | PUT | none |
 | main | `/dd/v1/register/otp` | POST | none |
@@ -802,14 +847,13 @@ happening on those same routes. The Home stories rail is §23 (one bubble per fo
 
 ## Still absent from both documented lists
 
-Not in §1–26 and not in dine-in `main` @ `b971951`. The app shows an empty state or
+Not in §1–29 and not in dine-in `main` @ `b971951`. The app shows an empty state or
 "coming soon" for these, never demo data (`lib/core/di/injection.dart`).
 
 A server flag for the phase 3 tour is not a gap. The tour-seen flag stays on the device, and a reinstall may show the tour again (2026-10-01). No field is named for one. Repeating `PUT /v1/follows` or `PUT /v1/feed_posts/{uuid}/reaction` is not known to be safe. Duplicates are tolerated for now (2026-10-01).
 
 | Area | What's missing | App seam today |
 |---|---|---|
-| Auth | Handle availability | Pending from BE (2026-10-01). The handle issue is expected to go away once it ships. `AuthRepository.isHandleAvailable` (always true). No path captured |
 | Profile | Another user's public profile beyond §24's name, image and totals (bio) | — |
 | Profile | Per-month counts: verified experiences and helpful this month (§24 has lifetime totals only) | `This month` cards show FE/NA |
 | Profile | Aggregated top tags (post `enrichment.tags` also carry moderation tags such as `nsfw`) | Analysis "Top tags · FE/NA" |
@@ -823,7 +867,7 @@ A server flag for the phase 3 tour is not a gap. The tour-seen flag stays on the
 | Pay | Pay at a place / the bill after a reservation | `UnavailableBillRepository` (FE/NA); the at-table pay is the real dine-in pay |
 | Elara | Any assistant endpoint | `UnavailableElaraRepository` (FE/NA) |
 | Feed | Guest-readable single post | `GET` §8 requires a JWT |
-| Feed | Edit route (`PUT /v1/feed_posts/{uuid}`) | Edit hidden except for the author, and the route is not captured |
+| Feed | Edit route. feed_svc has `UpdateFeedPost` (`4b563a4`, 2026-10-16; protos #1171), but customer_gateway exposes no route for it | Edit hidden except for the author |
 | Feed | Drafts, report-post | Guests get no server drafts (2026-10-01). Signed-in server drafts come later. In-memory drafts; no report. No draft route captured |
 | Feed | Search must hide soft-deleted posts | §21 bug |
 | Create | Happening / restaurant-story sample body | No happening create sample; the stories rail is §23 |
@@ -831,4 +875,5 @@ A server flag for the phase 3 tour is not a gap. The tour-seen flag stays on the
 | Create | `cover_media_id` echo, Google-place import | Cover re-uploaded; non-partner places deferred |
 | Create | Bill-photo (OCR) visit verification; a partner flag on `ComposerRestaurantHit` | Google and non-partner picks show "Upload your bill · FE/NA"; partner = catalog hit |
 | Create | `image` on Google `ComposerRestaurantHit`s (catalog fetches the Places photo only at ensure/create time) | No image: the app doesn't call Google Places for a photo (removed 7 Oct 2026), so the hit shows the restaurant's initial until BE sends an `image` |
-| Tokens | Token store / top-up | Wallet live on §26 (2026-10-14); Amplify live on §27 (2026-10-15); no Top up || Other | Push registration, city list / geocode | No push; fixed Bengaluru lat/lng |
+| Tokens | Token store / top-up | Wallet live on §26 (2026-10-14); Amplify live on §27 (2026-10-15); no Top up |
+| Other | Push registration, city list / geocode | No push; fixed Bengaluru lat/lng |

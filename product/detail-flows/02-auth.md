@@ -10,7 +10,7 @@ The gate opens only for an action tied to a person: react, follow, post, reserve
 
 After OTP verification, if the guest took an action that triggered the gate, show Complete profile. Otherwise show the tour. The tour-seen flag stays on the device. A reinstall may show the tour again. No server flag. Superseded 2026-10-01: the next step was the phase 3 tour on the first verification of the account.
 
-On `auth-name`, the handle availability check is pending from BE. Once it exists, a handle that already exists shows "Already have an account? Sign in". The handle issue is expected to go away once it ships. No path is named for the check.
+On `auth-name`, the handle is checked against BE as it is typed (live 2026-10-24, api-reference §28). A handle that already exists shows "Already have an account? Sign in", which opens phone + OTP sign-in. The handle is claimed for the account at the first sign-in.
 
 ```mermaid
 flowchart TD

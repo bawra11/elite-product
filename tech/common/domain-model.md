@@ -117,8 +117,8 @@ plus live follower (and, for users, following) counts from Redis. These counts a
 numbers, not the string counts of §13/§15. Every count on a profile comes from here or shows
 FE/NA; the app never counts loaded pages.
 
-- User: also `curation_count` and the public ladder badge (`status_level`, `status_tier`,
-  `status_tier_name`).
+- User: also `curation_count`, the public ladder badge (`status_level`, `status_tier`,
+  `status_tier_name`) and `username` (§28, empty when unclaimed).
 - Restaurant: also the daily insights: `worth_it` (`score` 0–100 + recommend / not-recommend
   counts, `decaying`), `worth_it_trend` (`direction`, `delta`, `reason`, up to 90 daily points),
   `experience_dna` (`available`, six axes with mentions / positive / percent / eligible) and
@@ -141,7 +141,7 @@ seam), but keep their data sources behind a repository interface that can be poi
 mock until a capture exists:
 
 - **`RestaurantStory`** — product name for the BE post type happening. `{uuid, restaurant, photos[], dishTags[], offers[], actions[], tags[], body}`, plus `starts_at` / `ends_at` (`ends_at` ≥ `starts_at`). Same `feed_posts` routes as experience and curation. No sample body yet.
-- **Onboarding phase-1** (`name` + `username` claim) is local until a profile write lands. General phase-2 sign-in is phone number + OTP only (`POST /dd/v1/authentication/otps`, `PUT /dd/v1/login/otp`). No password. The WhatsApp magic link is not a general phase-2 option; see the auth note below. The handle availability check is pending from BE. The handle issue is expected to go away once it ships. No path is captured.
+- **Onboarding phase-1** (`name` + `username` claim) is local until a profile write lands. General phase-2 sign-in is phone number + OTP only (`POST /dd/v1/authentication/otps`, `PUT /dd/v1/login/otp`). No password. The WhatsApp magic link is not a general phase-2 option; see the auth note below. The handle is checked live on the name screen (§28 availability) and claimed with `PUT /v1/users/current/username` right after the first sign-in; from then on `UserDto.username` / `UserProfileMetadata.username` is the source.
 The next three notes are 2026-10-01 decisions. They close former open questions and do not add entities or fields.
 
 - **Phase 3 tour-seen** stays on the device. A reinstall may show the tour again. No server flag, and no field is named for one.
@@ -180,9 +180,8 @@ when the real API lands.
 sign-in for dine-in and paid-QSR, so BE can use WhatsApp's customer-service window to
 message the user on WhatsApp. It is not a general diner sign-in option. Stage has
 `POST /dd/v1/authentication/otps`, `PUT /dd/v1/login/otp`, and `PUT /dd/v1/whatsapp/login`.
-phase01 keeps all three. There is no password endpoint. Handle availability is still
-missing. The check is pending from BE (2026-10-01), and the handle issue is expected to
-go away once it ships. No endpoint is named. The OTP is
+phase01 keeps all three. There is no password endpoint. Handle availability and the username claim are live
+since 2026-10-16 (api-reference.md §28). The OTP is
 6 digits for now. That length is the current value from the OTP provider and may change,
 so clients must not hard-code it. Every build signs in through
 `DineInOtpAuthRepository`. There is no stub, test code, or refresh-token bypass. After

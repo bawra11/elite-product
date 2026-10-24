@@ -51,7 +51,7 @@ groups below were rebuilt from the screen ids, and they follow the prototype's r
 | Screen id | Label | Source | Flutter |
 | --- | --- | --- | --- |
 | `explore-landing` | Explore landing | main (cut off) / sa | `explore/…/explore_screen.dart` |
-| `explore-search` | Explore search results | sa | `explore/…/explore_results_screen.dart` |
+| `explore-search` | Explore search results | sa | removed 2026-10-16; Search's Restaurants scope lists places (`explore/…/search_screen.dart`) |
 | `discovery` | Discovery feed | sa | UI reused as the Home story viewer (`story-view` from the circular bubbles). Not a tab or a feed. |
 | `curation-feed` | Curation Feed View | export only | partial: `curation/…/curation_screen.dart` (Curation tab) is a plain list; the full-screen swipe viewer is being rebuilt |
 
@@ -126,7 +126,7 @@ path from the place profile, not `pay-bill`. See `../README.md`.
 
 Live Menu is open to guests. Live Vibe needs sign-in (2026-10-01). The `auth-gate` copy no longer lists Live Menu with Live Vibe. The `auth-otp` screen says the code length is set by the OTP provider (6 for now) and is never fixed. The basic user profile view is not gated, but any private information or analytics on the profile is gated behind sign-in.
 
-After OTP, `auth-verified` sends a gate action to Complete profile (`auth-profile-30`). Otherwise it shows the tour. The tour-seen flag stays on the device, and a reinstall may show the tour again. Superseded 2026-10-01: the verified screen always offered a return to the action, with "Complete my profile instead" as the optional path. On `auth-name`, the handle check is still pending. Once it exists, a taken handle shows "Already have an account? Sign in".
+After OTP, `auth-verified` sends a gate action to Complete profile (`auth-profile-30`). Otherwise it shows the tour. The tour-seen flag stays on the device, and a reinstall may show the tour again. Superseded 2026-10-01: the verified screen always offered a return to the action, with "Complete my profile instead" as the optional path. On `auth-name`, the handle is checked live (2026-10-24), and a taken handle shows "Already have an account? Sign in".
 
 ## Keeping this current
 
