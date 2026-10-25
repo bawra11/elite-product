@@ -2,6 +2,8 @@
 
 Digital Dining's in-venue bar is Home, Menu, Re-order or All Orders, Pay Bill, and Waiter Req. Pay is the dine-in or QSR diagram. These three are the rest. None has a Claude Design screen, and none has a captured endpoint.
 
+Digital Dining and paid QSR share one Home tab: the restaurant's feed, which holds its own posts and brand posts nearby. Every post opens its detail. A restaurant or brand post opens as a story and has no votes, because those are the diner's to give. An experience shows the Elite card with Helpful, Not helpful and Amplify. A curation shows the Elite card with Helpful and Not helpful. That feed carries no diner experiences or curations today, since diners' posts are tagged `ALL` and the feed reads the restaurant's tag, but the cards are ready if any arrive. The Pay tab has no highlight behind it.
+
 ```mermaid
 flowchart TD
   venue["In the venue"] --> waiter["Waiter request"]

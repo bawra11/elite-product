@@ -114,9 +114,11 @@ A place's Worth It score, its trend and its Experience DNA are BE's daily insigh
 profile metadata, read beside every catalog place read. The app draws them (score chip, trend
 card with a range menu and scrubbable chart, the DNA gem and sheet) and computes none of them.
 Elite Tokens live on user_svc (§26): `WalletCubit` reads balance, Status XP, the ledger and the
-earn policy, and every earn amount in the UI comes from that policy. Amplify (§27) is a sheet
-from an experience's detail or the Published step (`AmplifyCubit`); it checks the balance
-before buying and reuses one idempotency key per sheet and tier.
+earn policy, and every earn amount in the UI comes from that policy, through feed_svc's per-post
+earn rules mirrored in `TokenEarnPolicyView` (`experienceEarn`, `curationEarn`). Amplify (§27) is a
+sheet from an experience's detail, the Published step or the dine-in Home (`AmplifyCubit`). It
+prices each tier as feed_svc debits it (catalogue rate, else the tier price), confirms the spend
+with the balance and what's left, and reuses one idempotency key per sheet and tier.
 
 Where BE has no data the screen shows the literal FE/NA, never a stand-in; the open list for BE
 is the "Still absent" table in `api-reference.md`.

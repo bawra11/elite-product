@@ -33,4 +33,6 @@ A verified experience is one tied to a real visit and order. The visit step can 
 
 Save into a curation lives on `create-success` ("Save {place} to a curation"), not on the narrate step: the place is only worth saving once the experience is out.
 
-Amplify has no stage endpoint yet, so `create-amplify` says it is coming soon rather than showing an error.
+On `create-narrate`, "Earn more tokens" lists the earn policy's conditions: a title and a write-up of its minimum length, and a verified visit for the bigger amount. Photos don't earn. The meter shows the most the post can earn, because user_svc's monthly caps aren't checked in the app (§26).
+
+`create-amplify` lists each tier at what the buy will debit, which is user_svc's catalogue rate (§27). Picking one opens a confirm sheet with the cost, the balance and what's left. Only Confirm spends the Tokens.

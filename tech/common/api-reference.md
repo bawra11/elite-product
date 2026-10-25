@@ -627,12 +627,25 @@ POST /v1/token_wallet/debit                    DebitUserTokenWalletRequest (user
 Credits land as available balance at once (no pending state), so the app has no Pending figure. There
 is no Token store or top-up route, and no purchased/bonus lots.
 
-Drift from the app's earlier design model: the app's curation reward rule (title, description, cover,
-`CurationDraft.rewardSpots` = 5 places) predates the policy; user_svc's rule is
-`earn_curation_min_members` places and `earn_curation_min_experiences` experiences, capped
-`earn_curation_max_month`. The app shows the policy's amount but still checks its own rule. Unverified
-caps (`max_rolling_7d`, `max_month`) are user_svc-side, so the published screen shows what a post
-qualifies for, not whether this month's cap is spent.
+**Earn rules** (feed_svc `pkg/svc/feed_token_earn.go`, read 2026-10-26; the source of truth, and the
+app mirrors it). feed_svc credits on publish and sends user_svc only the earn category; user_svc sets
+the amount, the expiry and the limits. Only a PUBLISHED post whose visibility is PUBLIC (or unset) earns.
+
+- **Experience:** trimmed title ≥ `earn_title_min_runes` and trimmed body ≥ `earn_body_min_runes`
+  (counted in runes), plus a `restaurant_id`. The category is `EARN_EXPERIENCE_UNVERIFIED` when the
+  experience isn't verified, `_PARTNER_VERIFIED` when it is and the place is an Elite partner (its §24
+  metadata has an `account_id`), else `_NON_PARTNER_VERIFIED`. One credit per order, else per visit,
+  else per post (reference `urn:explorex:elite_token_earn:order_experience:<order_id>` ·
+  `…:visit_experience:<visit_id>` · `…:feed_post:<uuid>`). Photos, and length past the minimums, add nothing.
+- **Curation:** ≥ `earn_curation_min_members` places, and the author already has ≥
+  `earn_curation_min_experiences` published experiences that pass the title/body minimums (the first 50
+  read), at least one of them verified. Category `EARN_CURATION`, once per curation (`…:feed_post:<uuid>`).
+  Cover and description add nothing.
+- **Caps (user_svc):** `earn_unverified_max_rolling_7d`, `earn_unverified_max_month`, `earn_curation_max_month`.
+
+The app's meters (`TokenEarnPolicyView.experienceEarn` / `curationEarn`) check the per-post rules only and
+show the most a post can earn. The curation's experience condition and user_svc's caps are not checked
+(product, 2026-10-26). The app reads "partner" as `RestaurantSummary.ecosystemPartner`.
 
 ---
 
@@ -661,6 +674,11 @@ either shape). Stopping an amplification that already stopped answers `400`.
   `duration_days`, `target_impressions`, `available`, `unavailable_reason`). Tiers are always listed,
   even when not eligible. Stage today: Quick 150 / 3 days / 250 · Momentum 350 / 7 / 750 ·
   Spotlight 700 / 14 / 2000. The UI reads these, never hard-codes them.
+- **Cost** (feed_svc `pkg/svc/feed_amplify.go`): `CreateAmplify` debits user_svc with `use_item_rate` and
+  quantity 1, so a buy costs the spend catalogue's `transaction_item_rate` (§26) for the tier's item
+  (`SPEND_AMPLIFY_QUICK` / `_MOMENTUM` / `_SPOTLIGHT`), and the tier's `token_price` only when the
+  catalogue has none. The app works the cost out the same way (`AmplifyTierInfoView.cost`) and shows it,
+  the balance and what's left on a confirm sheet before it buys.
 - Create body: `{"tier": "AMPLIFY_TIER_QUICK", "idempotency_key": "…"}`. The same key returns the same
   amplification, so the app keeps one key per sheet and tier and reuses it on retry.
 - `AmplificationDto`: `uuid`, `feed_post_id`, `sponsor_user_id`, `author_urn`, `tier`, `state`
@@ -676,6 +694,10 @@ either shape). Stopping an amplification that already stopped answers `400`.
 - Placement (§2, §3, §23 and the public follow feed): every 5 cards are 3 organic + 2 amplified;
   amplified posts carry `FeedPostDto.amplification_id` + `amplify_sponsor`. Organic results exclude
   ACTIVE amplified posts. The app does not label amplified feed cards yet.
+
+**BE drift:** eligibility's `token_price` is always feed_svc's hard-coded fallback (`amplifyTiers`:
+150 / 350 / 700), never the catalogue rate the buy actually debits, so the two can differ. The app
+prices from the catalogue.
 
 **BE drift:** buying with too few Tokens answers **HTTP 500** `{"service": "user_svc_v2", "code":
 "30", "description": "insufficient Elite Token balance"}`, not a 4xx. The app checks the balance before

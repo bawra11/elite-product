@@ -27,3 +27,7 @@ flowchart TD
 ```
 
 From an experience, `create-curation-pick` adds that place to an existing curation or starts one, then returns to that experience. Delete on the curation shows only for the author. Edit on a published curation waits for BE's update route; drafts stay editable in My curations, which keeps drafts and the curations published from this device across restarts.
+
+"Earn more tokens" on both curation steps follows feed_svc's rule (§26): a public curation with the earn policy's minimum number of places earns the policy's curation amount, once per curation. Cover and description add nothing. The meter shows the most it can earn, because the app doesn't check the earlier-experiences condition or the monthly cap.
+
+On `curation-detail`, a place's DNA gem opens the same Experience DNA sheet as the place profile.

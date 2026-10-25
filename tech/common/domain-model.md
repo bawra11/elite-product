@@ -127,11 +127,14 @@ FE/NA; the app never counts loaded pages.
 ### `UserTokenWalletDto` and friends (Elite Tokens, §26)
 Protos used directly, with read-only view extensions in `lib/domain/entities/wallet.dart`:
 balance, Status XP and level band (own profile only), the ledger, and the earn policy that
-every earn amount in the UI reads (never hard-coded). Credits land at once; no pending state.
+every earn amount in the UI reads (never hard-coded). `TokenEarnPolicyView.experienceEarn` and
+`curationEarn` mirror feed_svc's per-post earn rules (§26) and give the most a post can earn.
+Credits land at once; no pending state.
 
 ### `AmplificationDto`, `AmplifyTierInfo` (Elite Amplify, §27)
 Protos used directly (`lib/domain/entities/amplify.dart`). Any signed-in diner sponsors an
-Amplify on any public experience; tiers, prices and reach come from eligibility. Amplify buys
+Amplify on any public experience; tiers and reach come from eligibility, and the cost is the
+spend catalogue's rate for the tier (`AmplifyTierInfoView.cost`, eligibility's price as fallback). Amplify buys
 labelled extra distribution only and never touches DNA, Worth It or organic rank.
 
 ## Unconfirmed entities (no API sample yet)
