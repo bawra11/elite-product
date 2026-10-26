@@ -33,6 +33,6 @@ flowchart TD
   review --> visit["create-visit for this order"]
 ```
 
-Order status uses the QSR status gradient. The status names are not in the captured docs. SkipQ payment routes are not in the captured endpoint list. The only written payment routes are the dine-in init and verify paths, and those are table-order routes.
+Order status uses the QSR status gradient. The status names are not in the captured docs. Stage reports the kitchen's accept as `ORDER_STATUS_SCHEDULED` (observed, not documented), so SCHEDULED or COMPLETED shows accepted and IN_PROGRESS shows waiting. `GET /dd/v1/users/orders/current` is empty for a paid QSR order once it is IN_PROGRESS, so the app keeps the order's id on the device while it waits and reads it back by id after a relaunch. SkipQ payment routes are not in the captured endpoint list. The only written payment routes are the dine-in init and verify paths, and those are table-order routes.
 
 Digital Dining's cart chrome (Add, quantity, View Cart) is the cart this flow uses. Reorder lands back on this cart when the restaurant is QSR.

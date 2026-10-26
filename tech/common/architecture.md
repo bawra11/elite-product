@@ -73,7 +73,8 @@ profile or tour all run in one `AuthSheetRoute` over the screen the diner is on,
 through `showAuthGate`. There is no `/auth` route. `requireVerified` waits on a ticket the auth
 flow closes, not on a pushed route's result: signing in refreshes the router, and go_router
 rebuilds a pushed route on a refresh, which orphaned the awaited push (the action never
-resumed after the gate).
+resumed after the gate). The tour ends on Home (2026-10-25): the shell takes a tab request, since tabs
+aren't routes and `go('/')` kept the Profile tab.
 
 Every endpoint path lives in `lib/core/network/api_endpoints.dart` with its `§n` ref to
 `api-reference.md`; nothing else spells a path. Search (Home's CTA and the Search screen) is the
@@ -107,6 +108,18 @@ icon (scan with no visit, cart with one). Creating a curation pops back to the o
 screen; My curations is only the destination when that is where Curate started. The nav bar's +
 follows the tab: on Experience or Curation it opens that flow directly; on Home or Profile it
 opens the Share something sheet.
+
+## Location and stories (2026-10-26)
+
+The feed's location (`LocationCubit`) is the device's position when permission is already given, else the
+listed city nearest the IP location (`FeedLocation.nearestCity` over GeoJS, since BE has no geo-IP endpoint;
+a country-only answer keeps Bengaluru). Launch never prompts. The OS dialog comes only from "Use my location"
+and from the dine-in resolver for a restaurant with `location_required` (scan, DD, paid QSR), which needs a
+fresh precise fix (approximate counts as not enough). That fix goes to create/join only, never to the feed.
+
+Home's stories rail (§23) opens `StoriesScreen`: each followed author's posts as stories, in the Discovery
+UI. Seen post ids are device-local in SharedPreferences (newest 500), since §23 has no seen state. A story
+pauses while anything covers the viewer or the diner drags between authors.
 
 ## Insights, Tokens and Amplify (2026-10-15)
 

@@ -52,7 +52,7 @@ groups below were rebuilt from the screen ids, and they follow the prototype's r
 | --- | --- | --- | --- |
 | `explore-landing` | Explore landing | main (cut off) / sa | `explore/…/explore_screen.dart` |
 | `explore-search` | Explore search results | sa | removed 2026-10-16; Search's Restaurants scope lists places (`explore/…/search_screen.dart`) |
-| `discovery` | Discovery feed | sa | UI reused as the Home story viewer (`story-view` from the circular bubbles). Not a tab or a feed. |
+| `discovery` | Discovery feed | sa | UI reused as the Home story viewer (`story-view` from the circular bubbles), `discovery/…/stories_screen.dart`, Instagram-style (2026-10-25). Not a tab or a feed. |
 | `curation-feed` | Curation Feed View | export only | partial: `curation/…/curation_screen.dart` (Curation tab) is a plain list; the full-screen swipe viewer is being rebuilt |
 
 ## 5 · Content detail (3)

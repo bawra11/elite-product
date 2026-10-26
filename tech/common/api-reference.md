@@ -898,4 +898,6 @@ A server flag for the phase 3 tour is not a gap. The tour-seen flag stays on the
 | Create | Bill-photo (OCR) visit verification; a partner flag on `ComposerRestaurantHit` | Google and non-partner picks show "Upload your bill · FE/NA"; partner = catalog hit |
 | Create | `image` on Google `ComposerRestaurantHit`s (catalog fetches the Places photo only at ensure/create time) | No image: the app doesn't call Google Places for a photo (removed 7 Oct 2026), so the hit shows the restaurant's initial until BE sends an `image` |
 | Tokens | Token store / top-up | Wallet live on §26 (2026-10-14); Amplify live on §27 (2026-10-15); no Top up |
-| Other | Push registration, city list / geocode | No push; fixed Bengaluru lat/lng |
+| Feed | Seen state for §23 stories | Device-local seen post ids (newest 500) |
+| Dine-in | The kitchen's accept on a paid QSR order: stage sends `ORDER_STATUS_SCHEDULED`, undocumented. `/dd/v1/users/orders/current` is empty for a paid QSR order once IN_PROGRESS | SCHEDULED or COMPLETED reads as accepted (`OrderTypeUtils`); the waiting order's id is kept on the device and read back by id |
+| Other | Push registration, city list / geocode, geo-IP | No push; a fixed city list. With no device position, the feed takes the listed city nearest the IP location from GeoJS (third-party, 2026-10-26) |

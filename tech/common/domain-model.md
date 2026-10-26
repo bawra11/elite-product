@@ -176,7 +176,8 @@ when the real API lands.
 - `ExperienceDna` / `DnaAxis`: restaurant only, never on an individual experience. Built from §24 `experience_dna` once BE marks it `available` (3+ eligible axes; an axis is eligible at 3+ mentions); the place shows no DNA before that. Axes SERVICE, FOOD, HYGIENE, AMBIENCE, VIBE, VALUE; only eligible ones are drawn.
 - `Curation` / `CurationSpot` / `CuratorSummary`: up to 15 spots; each spot has a note, verified-visited and promoted flags. The wire payload is confirmed (§7); these richer spot fields are still frontend-only.
 - `RestaurantStory`: restaurant-authored happening, with media, dish tags and an offer.
-- `StoryRing`: the Home stories rail, one ring per followed author from `PUT /v1/feed_posts/following/grouped_by_author` (§23). The ring opens that author's best post. Guests get an empty rail.
+- `StoryRing`: the Home stories rail, one ring per followed author from `PUT /v1/feed_posts/following/grouped_by_author` (§23). The ring holds all that author's posts as stories. Seen post ids are device-local (newest 500); §23 has no seen state. Guests get an empty rail.
+- `FeedLocation` / `GeoPoint` (`geo.dart`): where the feed is ranked from, the device's position or a listed city. With no device position, the city is the one nearest the IP location (`FeedLocation.nearestCity`).
 
 **Auth.** General diner sign-in is phone number + OTP. The WhatsApp magic link
 (`PUT /dd/v1/whatsapp/login`) is a sign-in method, and it is the forced (preferred)

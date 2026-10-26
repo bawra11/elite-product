@@ -22,7 +22,7 @@ After Home, the diner is a named guest. Browsing, place profiles, and reading ex
 
 ## Phase 3, after OTP verification
 
-No screen in the design export covers this tour. The tour-seen flag stays on the device. A reinstall may show the tour again. No server flag.
+No screen in the design export covers this tour. The tour-seen flag stays on the device. A reinstall may show the tour again. No server flag. The tour ends on Home, and so does closing its "Start a curation" (2026-10-25).
 
 Superseded 2026-10-01: "Phase 3, after the first successful sign-in" and "It is shown once, not on later logins." The old diagram always opened the tour, with Complete profile as an optional branch off `auth-verified`.
 
@@ -37,7 +37,7 @@ flowchart TD
   showProfile --> suggest["Suggested establishments to follow"]
   suggest --> community["Create your own community"]
   community --> invite["Invite friends"]
-  invite --> done
+  invite --> homeEnd([Home])
   p30 --> p100["auth-profile-100"]
   p100 --> done
 ```

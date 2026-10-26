@@ -4,7 +4,9 @@ Home is one mixed list of three post types: experience, curation, and restaurant
 
 At the top there is a curation row and other filtered modules (highlights, followed experiences, brand curation suggestions, place suggestions, brand promotions). Those modules come from separate calls with different arguments, not from the mixed list. The app will render unused brief-module slots in a later pass. They stay in this diagram.
 
-The circular bubbles at the top open a Discovery-like story viewer. That viewer can contain curations or restaurant stories, not only experiences. Discovery is not a tab and not a separate feed.
+The circular bubbles at the top are the followed authors (§23). Each bubble holds all of that author's posts, which can be experiences, curations or restaurant stories, and opens the story viewer in the Discovery UI. It plays like Instagram (2026-10-25): a photo for 1.5 s and a video for its length. A tap on the left third goes back and anywhere else goes on, crossing authors at either end. Holding pauses, a swipe across changes author, and a swipe down closes. A bubble watched through greys and moves to the end, and seen state stays on the device. Discovery is not a tab and not a separate feed.
+
+The feed is ranked from a location: the device's position when permission is already given, else the listed city nearest the IP location (2026-10-26). Home never asks for location on open. "Use my location" in the location sheet asks.
 
 ```mermaid
 flowchart TD

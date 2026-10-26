@@ -8,6 +8,8 @@ Reserve Table shows only the reserve option. Order-at-table is not a choice on t
 
 Order at table starts from a table-QR deep link, or from the top-right icon on the place screen: a scan icon when there is no running order, a cart icon when there is (opens the running order). That dine-in sign-in is the WhatsApp magic link.
 
+A restaurant that requires location (scan, Digital Dining, paid QSR) takes a fresh precise fix before the visit is created or joined (2026-10-26). Approximate location is not enough. On a denial the screen says the restaurant needs to verify the diner is there and shows the steps for the iOS app, the Android app, Safari or another browser, with Open settings on the apps. The fix goes only to the visit, never to the feed.
+
 ```mermaid
 flowchart TD
   entry["Place row, card, or story"] --> place["place-profile"]
