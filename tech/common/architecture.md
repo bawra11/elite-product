@@ -74,7 +74,9 @@ through `showAuthGate`. There is no `/auth` route. The tour is onboarding's, nev
 Complete profile is the real profile form (2026-11-08): the dine-in `UserProfilePage` over the shared
 `UserBloc`, which reads §20 `users/current`, uploads the photo and saves with `PATCH /dd/v1/users/current`.
 In the sheet, "Skip for now" replaces its back and Edit, so the pending action still resumes. Going guest
-clears `UserBloc`, so the form never shows or saves the last account. `requireVerified` waits on a ticket the auth
+clears `UserBloc`, so the form never shows or saves the last account. Any other profile write (the table
+resolver's birthday prompt) hands the PATCH response to `UserBloc` (`UserChanged`), so the birthday shows
+and stays locked after its first save. `requireVerified` waits on a ticket the auth
 flow closes, not on a pushed route's result: signing in refreshes the router, and go_router
 rebuilds a pushed route on a refresh, which orphaned the awaited push (the action never
 resumed after the gate). The tour ends on Home (2026-10-25): the shell takes a tab request, since tabs

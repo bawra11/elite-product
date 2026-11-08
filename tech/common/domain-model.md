@@ -84,6 +84,9 @@ Full field list in `api-reference.md` §20. For the diner-facing app, the fields
 - **Private**: `phone_number`, `dob`, `razorpay_id`, `firebase_user_id`
 - **Dynamic/semi-dynamic**: `overall_visit_count`, `overall_transaction_count`,
   `elite_membership`, `restaurant_memberships[]`, `pep_member`, `whatsapp_consent_given`
+- **Completion % (FE-only)**: `UserDto.completionPercentage` from six fields: photo (`dp_url`) 25;
+  `first_name`, `last_name`, `phone_number`, `gender`, `dob` 15 each. The profile form, its
+  "How it's calculated" sheet and Profile complete all read it. `dob` locks after its first save.
 
 Do **not** model the full nested `Restaurant`/POS object tree from `restaurant_memberships[].membership_details.restaurants[]`
 in the diner app's domain layer — flatten to a `RestaurantMembershipSummary` with just

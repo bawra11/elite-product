@@ -597,6 +597,7 @@ Fields:
   `worth_it_count`, `helpful_count`, `unhelpful_count`, `impression_count`; and live
   `follower_count`, `following_count` (following spans users, restaurants and brands).
 - `RestaurantProfileMetadata`: `uuid`, `display_name`, `display_image`, `logo`, `account_id`,
+  `diners_served` (protos #1184, gateway `6636eac`; the app doesn't read it yet),
   `franchise_id`, plus its own happenings (`happening_count`, `helpful_count`,
   `unhelpful_count`, `impression_count`), experiences that name it (`experience_about_count`,
   `experience_about_impression_count`), curations that include it (`curation_about_count`), and
@@ -810,6 +811,10 @@ chosen scope too.
 for `PageRequest{Page: 0}`, and a `page` or `page_request.page` in the body is ignored (page 1 returned
 page 0's hits). There is no cursor or `has_next_page`, and each section's `total` is the number of hits
 returned, not a match count. `page_size` defaults to 5 and is capped at 20.
+Since customer_gateway `f6bcaf2` (read from the code 2026-11-08, not checked live), each feed vertical
+(experiences, curations, happenings) is its own feed search of `page_size` (before, one shared search
+of up to 60 was split by type, so a vertical could come back short), and its `total` is feed_svc's
+page total for that post type.
 
 The app sends §25 for every scope, Curations and Experiences included (user decision, 2026-11-07: never
 the feed search §2–3 from Search), always with `page_size` 20 (`RemoteExploreRepository.pageSize`). So
@@ -858,6 +863,13 @@ Where the handle comes back: `UserDto.username` (§20 `users/current`, search us
 `UserProfileMetadata.username` (§24, and so `FeedPostAuthorDto.profile_meta.user` on every feed post
 and `FollowerDto.profile_meta.user`, §29). Empty when unclaimed.
 
+On curation posts only, `FeedPostAuthorDto.profile_meta.user.visited_restaurants` lists the curator's
+completed dine-in visits (protos `24200cfc`). feed_svc `5522b71` (5 Nov 2026) keeps it on curation
+authors in feed results and the single post; every other post type drops it. The app marks a place
+Verified Visited when its `restaurant_id` is in that list (`FeedPostAuthorView.visitedRestaurantIds`):
+"n visited / m spots" on the card, "n of m personally visited" on the detail, the shield on each
+place's picture, and My curations.
+
 The app checks availability on the name screen (public route, debounced), claims the typed handle
 right after the first sign-in when the account has none (`SessionCubit.syncHandle`), and otherwise
 adopts the account's username. Diners show as their picture and `@username` (display name when they
@@ -882,6 +894,28 @@ GET /v1/public/restaurants/{restaurant_id}/following_count
 Captured live 2026-10-15: `{"followers": [{"follower_urn", "created_at", "user": UserProfileMetadata}]}`,
 so each row carries the follower's name, image, counts and ladder badge. Profile's Followers cell still
 toasts "coming soon"; this is the route a followers list would read.
+
+## 30. Novu inbox session (not used by the app yet)
+
+customer_gateway `8a91527` (stage `fc00812`, read from the code 2026-11-08). Upserts the signed-in user
+as a Novu subscriber and returns what Novu's Inbox API needs, including the HMAC the app has been
+missing for prod.
+
+```
+POST /v1/inbox/session
+Authorization: $ACCESS_TOKEN
+
+{"urn":"urn:explorex:users:…","first_name":"…","last_name":"…","phone_number":"…"}
+```
+
+`200` → `{subscriber_id, application_identifier, subscriber_hash}` (a plain JSON object, not a proto).
+`urn` is required and must be the JWT's user (`400` if empty, `403` if it differs); `503` when Novu
+isn't configured, `502` when the upsert fails.
+
+**Drift:** the subscriber id is the user's **URN**. The app's `NovuNotificationRepository` opens the
+inbox with the user's **uuid** as `subscriberId` and no hash, so once it uses this session it must
+switch to the URN as well, or it reads a different subscriber. Needs BE (or a check): which id
+feed_svc and the other triggers notify.
 
 ## Feed moderation (feed_svc, 2026-10-15)
 
@@ -939,6 +973,7 @@ General diner sign-in on phase01 is phone number + OTP (`POST /dd/v1/authenticat
 | §27 | `/v1/feed_posts/{id}/amplify[/eligibility]`, `/v1/amplifications/{search,{uuid},{uuid}/stop}` | GET/POST/PUT | JWT |
 | §28 | `/v1/public/users/username/availability` | PUT | `X-API-TOKEN` |
 | §28 | `/v1/users/current/username` | PUT | JWT |
+| §30 | `/v1/inbox/session` | POST | JWT (not used yet) |
 | main | `/dd/v1/authentication/otps` | POST | none |
 | main | `/dd/v1/login/otp` | PUT | none |
 | main | `/dd/v1/register/otp` | POST | none |
@@ -983,11 +1018,11 @@ A server flag for the phase 3 tour is not a gap. The tour-seen flag stays on the
 | Tokens | Loyalty balance; an earn category for completing the profile | FE/NA on the token card and the Verified screens |
 | Restaurants | Verified-experience count (§24 has `experience_about_count`, not a verified count) | DNA correction "one mention among FE/NA" |
 | Restaurants | Opening hours: `RestaurantDto.restaurant_timings` exists but is absent from the diner catalog GET | "Open till FE/NA" |
-| Restaurants | Rolling 30-day experience count; diners served | Trend card "Last 30 days" and curation detail "diners served" FE/NA |
+| Restaurants | Rolling 30-day experience count; diners served (BE now sends `RestaurantProfileMetadata.diners_served`, §24; the app doesn't read it yet) | Trend card "Last 30 days" and curation detail "diners served" FE/NA |
 | Restaurants | Deals / offers, loyalty programme | Place benefits rows FE/NA |
 | Restaurants | Live Vibe outside a live table | "No update" |
 | Restaurants | Reserve a table (`booking_svc` protos exist, no gateway route) | `UnavailableReservationRepository` (FE/NA) |
-| Pay | Pay at a place / the bill after a reservation | `UnavailableBillRepository` (FE/NA); the at-table pay is the real dine-in pay |
+| Pay | Pay at a place / the bill after a reservation | `UnavailableBillRepository` (FE/NA); the at-table pay is the real dine-in pay. The app calls no `explorex_pay` route; BE added coupon apply/remove on `/v1/explorex_pay_orders/{order_id}/coupon_code` (PUT/DELETE, gateway `fc00812`, protos #1185) |
 | Elara | Any assistant endpoint | `UnavailableElaraRepository` (FE/NA) |
 | Feed | Guest-readable single post | `GET` §8 requires a JWT |
 | Search | Page/cursor and a sort on unified search §25 (it asks page 0 only) | Every scope shows one §25 page (`page_size` 20); a full one ends "More: FE/NA"; Latest is FE/NA |
@@ -1000,6 +1035,5 @@ A server flag for the phase 3 tour is not a gap. The tour-seen flag stays on the
 | Create | `image` on Google `ComposerRestaurantHit`s (catalog fetches the Places photo only at ensure/create time) | No image: the app doesn't call Google Places for a photo (removed 7 Oct 2026), so the hit shows the restaurant's initial until BE sends an `image` |
 | Tokens | Token store / top-up (BE now has a one-time purchase, `/v1/token_purchases`, §26; not wired) | Wallet live on §26 (2026-10-14); Amplify live on §27 (2026-10-15); no Top up |
 | Feed | Seen state for §23 stories | Device-local seen post ids (newest 500) |
-| Feed | The curator's visited places on a curation post. `author.user` (`usersvc.v2.UserProfileMetadata`) has `visited_restaurants` (protos `24200cfc`), but feed_svc `93b364a` ("Keep visited restaurants off feed post authors") clears it on every post; checked live on the public feed 2026-11-04 (empty list on all 20 curation authors). Needs BE: keep it on curation authors, or a visited flag per `CurationMember` | The app compares the members with `author.user.visited_restaurants` (protos_dart `v0.34.47`); while it's empty the card reads "0 visited / n spots" and the detail hides its "n of m personally visited" tag (user decision 2026-11-04: 0, not FE/NA) |
 | Dine-in | The kitchen's accept on a paid QSR order: stage sends `ORDER_STATUS_SCHEDULED`, undocumented. `/dd/v1/users/orders/current` is empty for a paid QSR order once IN_PROGRESS | SCHEDULED or COMPLETED reads as accepted (`OrderTypeUtils`); the waiting order's id is kept on the device and read back by id |
 | Other | Push registration (customer_gateway `52e65ea` registers FCM tokens through Novu on the SkipQ router only, `/skip_q/v1/users/current/push_tokens`; no Elite route), city list / geocode, geo-IP | No push; a fixed city list. With no device position, the feed takes the listed city nearest the IP location from GeoJS (third-party, 2026-10-26) |
