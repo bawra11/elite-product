@@ -25,7 +25,7 @@ groups below were rebuilt from the screen ids, and they follow the prototype's r
 | `auth-name` | Landing name and handle | main | `onboarding/…/name_screen.dart` |
 | `auth-gate` | Auth gate sheet | main | `auth/…/auth_flow_sheet.dart` (bottom sheet, no route) |
 | `auth-verified` | Verified | main | `auth/…/verified_views.dart` |
-| `auth-profile-30` | Profile 30 percent | main | `auth/…/verified_views.dart` |
+| `auth-profile-30` | Profile 30 percent | main | `dine_in/…/user_profile_page.dart` (the auth sheet's step and `/profile`) |
 | `auth-profile-100` | Profile complete | main | `auth/…/verified_views.dart` |
 
 ## 2 · Tutorial (4)
@@ -126,7 +126,7 @@ path from the place profile, not `pay-bill`. See `../README.md`.
 
 Live Menu is open to guests. Live Vibe needs sign-in (2026-10-01). The `auth-gate` copy no longer lists Live Menu with Live Vibe. The `auth-otp` screen says the code length is set by the OTP provider (6 for now) and is never fixed. The basic user profile view is not gated, but any private information or analytics on the profile is gated behind sign-in.
 
-After OTP, `auth-verified` sends a gate action to Complete profile (`auth-profile-30`). Otherwise it shows the tour. The tour-seen flag stays on the device, and a reinstall may show the tour again. Superseded 2026-10-01: the verified screen always offered a return to the action, with "Complete my profile instead" as the optional path. On `auth-name`, the handle is checked live (2026-10-24), and a taken handle shows "Already have an account? Sign in".
+After OTP, `auth-verified` sends a gate action to Complete profile (`auth-profile-30`). That step is the real profile form: it shows the diner's photo and details from `users/current` and saves them (2026-11-08). Otherwise it goes straight back, with "Complete my profile instead" offered; the tour is onboarding's, never sign-in's (2026-11-04). Superseded 2026-10-01: the verified screen always offered a return to the action, with "Complete my profile instead" as the optional path. On `auth-name`, the handle is checked live (2026-10-24), and a taken handle shows "Already have an account? Sign in".
 
 ## Keeping this current
 

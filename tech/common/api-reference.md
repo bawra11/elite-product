@@ -180,18 +180,30 @@ curl -sS -X PUT "$BASE/v1/feed_posts" \
 
 ## 23. Follow feed grouped by author (stories rail)
 
-Signed-in only. One group per followed author (user, restaurant, or brand), authors ordered by
-their newest post, each group's `posts` best-first. The Home stories rail renders one bubble
-per group. Guests have no call. At most 10 authors; `page_request.size` above 10 is treated as 10.
+One group per followed author (user, restaurant, or brand), authors ordered by their newest post,
+each group's `posts` best-first, with sponsored (amplified) groups mixed in: up to 3 followed then
+up to 2 sponsored per 5, each sponsored group one post. The Home stories rail renders one bubble
+per group. At most 10 groups; `page_request.size` above 10 is treated as 10.
 
 ```
-PUT /v1/feed_posts/following/grouped_by_author
+PUT /v1/feed_posts/following/grouped_by_author          (signed in, Authorization)
+PUT /v1/public/feed_posts/following/grouped_by_author   (guest, X-API-TOKEN; gateway 5c75d7a)
 {"page_request":{"page":0,"size":10},"cursor":""}
 ```
 
 `200` → `{ groups: [{ author: FeedPostAuthor, posts: FeedPost[] }], next_cursor }`
 
-`cursor` is opaque. Empty is the first page. An undecodable cursor is a 400.
+A guest gets the sponsored groups only (feed_svc `6406c27`; product call 2026-11-03: guests see
+sponsored stories on the rail). Stage 2026-11-03: 3 sponsored experience groups, no `next_cursor`.
+
+`cursor` is opaque, sent top-level. Empty is the first page; no `next_cursor` is the last page (there
+is no `page_response`). An undecodable cursor is a 400. The app follows `next_cursor` as the rail
+scrolls near its end and skips an author already on the rail (BE de-duplicates within a page only).
+
+**BE drift (paging skips followed authors):** each page reads 30 inbox authors
+(`followfeed.CandidateAuthors`) and the cursor moves the offset by 30, but a page returns at most 10
+groups, and only 6 followed when sponsored slots fill. Followed authors past those in each 30 are
+never served. Needs BE: advance the offset by the authors actually returned.
 
 ---
 
@@ -220,7 +232,18 @@ Observed file types: `UPLOAD_FILE_TYPE_JPEG`, `UPLOAD_FILE_TYPE_MP4`.
 
 `PUT /v2/feed_posts/file_uploads` (customer_gateway `2779031`, 2026-10-22; feed_svc `21e28d5`) is the same
 call, with object names stored under `az/` (Azure). `PUT /dd/v2/users/current/file_upload` does the same for
-the profile photo (gateway `b3b39cb`). The app still calls the v1 routes.
+the profile photo (gateway `b3b39cb`). The app still calls the v1 routes. For an `az/` video, feed_svc
+writes the thumbnail and the HLS renditions to Azure as well and serves them from
+`https://files.stage.explorex.co.in` (feed_svc `f3c8d72`, 2026-11-02).
+
+> **BE bug (customer_gateway `f7f908e`, 2026-11-01; read from the code, not yet seen live):** the new
+> `PUT /v1/feed_posts/{uuid}` (§21a) is registered in `routes.go` *before* `PUT /v1/feed_posts/file_uploads`.
+> gorilla/mux takes the first route that matches, and `{uuid}` matches `file_uploads`, so this call now
+> reaches `UpdateFeedPost` with uuid `file_uploads`; `{"file_type":…}` doesn't unmarshal into a
+> `FeedPostDto`, so expect a 400. Every photo on an experience and every curation cover goes through
+> this call. Fix: register `file_uploads` above `{uuid}`, or constrain the pattern (`{uuid:[0-9a-f-]{36}}`).
+> `/v2/feed_posts/file_uploads` isn't affected, but it returns an Azure URL the app doesn't upload to yet.
+> Still registered in that order on `stage` `449d6f4` (read 2026-11-08).
 
 ## 5. Upload media bytes to `pre_signed_url`
 
@@ -464,8 +487,7 @@ The `price` scale is unconfirmed (docs/issues.md M10).
 
 Show **delete** and **edit** only when the signed-in diner is the author (`author_urn`, else
 `created_by_urn`). feed_svc's `DeleteFeedPostByUUID` does not check the author, so the app
-must hide both actions from everyone else. There is still no captured edit route
-(`PUT /v1/feed_posts/{uuid}`).
+must hide both actions from everyone else. Edit is §21a, and feed_svc checks the author there.
 
 ```
 DELETE /v1/feed_posts/{uuid}
@@ -477,6 +499,39 @@ Authorization: $ACCESS_TOKEN
 > **BE bug (observed 2026-09-25):** both posts the capture deleted (`40cb0d4f-…`, `7886e378-…`)
 > still come back from §2 with `post_status: FEED_POST_STATUS_PUBLISHED`. Soft-deleted posts
 > must be excluded from feed search.
+
+## 21a. Update feed post
+
+customer_gateway `f7f908e` (2026-11-01) forwards to feed_svc `UpdateFeedPost` (`4b563a4`, protos #1171).
+The body is a `FeedPostDto` built like a create (§6–7); the path's uuid names the post.
+
+```
+PUT /v1/feed_posts/{uuid}
+Authorization: $ACCESS_TOKEN
+
+{"caption_text":"…","title":"…","body":"…",
+ "post_type":"FEED_POST_TYPE_CURATION","post_status":"FEED_POST_STATUS_PUBLISHED",
+ "feed_visibility":"FEED_VISIBILITY_PUBLIC","visibility_tags":["ALL"],
+ "payload":{"curation":{"city":"Bangalore","members":[{"restaurant_id":"45e971cd-…","position":0}]}}}
+```
+
+`200` → the post as saved (overlays applied, as §8). From `pkg/svc/feed_post_update.go`:
+- Only the author edits. From the Elite apps, only a diner's own experience or curation; anything
+  else is 403. A deleted post is 404.
+- `post_type` and `post_status` are taken from the stored post. An experience keeps its `verified`,
+  `order_id` and `visit_id`.
+- `title`, `body`, `caption_text` (defaults to `title`), `visibility_tags` and the whole `payload` are
+  **replaced**, so send them all. `feed_visibility` changes unless it's `INVALID`.
+- `medias`: a non-empty list replaces the post's (new rows); an **empty list keeps them**, so a
+  cover can't be removed this way.
+- The create validation runs (`feed_svc_5`), Google `place_id`s are resolved, and member positions
+  are renumbered. The post is moderated again: the reply can be `FEED_POST_STATUS_PENDING_MODERATION`,
+  and it leaves feed search until it's allowed.
+- No tokens: feed_svc credits a curation on its first publish only.
+
+The app uses this to update a published curation from the editor ("Update curation") and to add a
+place to one from `create-curation-pick`. It re-uploads the cover only when the diner changed it.
+Experiences have no edit mode in the composer yet.
 
 ---
 
@@ -625,7 +680,19 @@ POST /v1/token_wallet/debit                    DebitUserTokenWalletRequest (user
   catalogue: `SPEND_AMPLIFY_QUICK` / `_MOMENTUM` / `_SPOTLIGHT`).
 
 Credits land as available balance at once (no pending state), so the app has no Pending figure. There
-is no Token store or top-up route, and no purchased/bonus lots.
+are no purchased/bonus lots.
+
+**Token purchase** (customer_gateway `c8384c8`, protos #1179; read from the code 2026-11-08, not wired):
+a one-time buy of Elite Tokens, paid through the payment gateway. JWT; the user comes from the session.
+
+```
+POST /v1/token_purchases                 {"token_count":100}         → TokenPurchaseOrderDto
+PUT  /v1/token_purchases/{uuid}/init     {"preferred_pg":<PaymentGateway>} → PaymentGatewayOrderResponse
+PUT  /v1/token_purchases/{uuid}/verify   (no body)                   → StatusResponse
+```
+
+`TokenPurchaseOrderDto`: `uuid`, `user_id`, `token_count`, `amount_to_pay` (paise, frozen at create from
+`token_count` × the server rate), `currency`, `payment_status`. The app has no Top up yet.
 
 **Earn rules** (feed_svc `pkg/svc/feed_token_earn.go`, read 2026-10-26; the source of truth, and the
 app mirrors it). feed_svc credits on publish and sends user_svc only the earn category; user_svc sets
@@ -721,15 +788,46 @@ PUT /v1/public/search     X-API-TOKEN (+ x-app-name / x-app-version)
 
 `200` → a gateway-built JSON object (no proto wraps it): `{<vertical>: {items: [...], total}}` for each
 vertical asked, or `{<vertical>: {error: "…"}}` when that vertical failed on BE (the others still
-answer). Items are protos: `RestaurantDtoV2`, `DishMenuDto` (with `restaurant_name`, hydrated from
-Redis), `UserDto`, `FeedPostDto`. `user_location` is required for restaurants and every feed vertical.
-The app parses each item on its own (a bad hit is skipped) and drops the feed `embedding`. Verified
-live on stage 2026-10-15.
+answer). Items are protos. Since customer_gateway `5c86aeb`/`7832454` (protos `de957dca`, `2e92b26a`;
+protos_dart `v0.34.50`, checked live 2026-11-07) the non-feed hits are wrappers:
+`restaurants` → `RestaurantSearchHit {restaurant: RestaurantDtoV2, profile_metadata}`, `dishes` →
+`DishMenuSearchResultDto {dish_menu: DishMenuDto, restaurant_name, restaurant_image}` (name and logo
+from the Redis restaurant profile), `users` → `UserSearchHit {user: UserDto, profile_metadata}`. The feed
+verticals stay bare `FeedPostDto`. `user_location` is required for restaurants and every feed vertical.
+The app parses each item on its own (a bad hit is skipped) and drops the feed `embedding`. An app on
+protos_dart before `v0.34.50` reads every wrapped hit as empty and shows no places, dishes or people.
+
+A blank `query` is **browse** (customer_gateway `014a0a5`, 2026-11-01): nearby restaurants and dishes, the
+home feed, and active users, in the verticals asked. A one-character `query` is still rejected: `400`
+`{"code":"177","description":"Invalid request"}` (`globalSearchMinRunes = 2` in `global_search.go`).
+Checked live on the public route 2026-11-04: `""` → 200 (all verticals, `page_size` 5: restaurants 5,
+dishes 5, users 5, experiences 5, happenings 2, curations 0; dishes alone at 20 → 20); `"c"` → 400;
+`"ctb"` → 200. The app's Search screen shows this default list until two characters are typed, in the
+chosen scope too.
+
+**No page, no sort (checked customer_gateway `dd17126`, live 2026-10-28; still so on `stage` `6636eac`,
+2026-11-07).** `GlobalSearchRequest` has only the five body fields above; every section asks its service
+for `PageRequest{Page: 0}`, and a `page` or `page_request.page` in the body is ignored (page 1 returned
+page 0's hits). There is no cursor or `has_next_page`, and each section's `total` is the number of hits
+returned, not a match count. `page_size` defaults to 5 and is capped at 20.
+
+The app sends §25 for every scope, Curations and Experiences included (user decision, 2026-11-07: never
+the feed search §2–3 from Search), always with `page_size` 20 (`RemoteExploreRepository.pageSize`). So
+Search shows one page in every scope, ranked by relevance: Latest is FE/NA, and a full section ends on
+"More: FE/NA". Places (`restaurants/search`) and people (`users/search_users`) page by number on their own
+routes, not wired yet; dishes have no global paged route.
+Needs BE: `page`/`cursor` and a sort on §25.
 
 Since customer_gateway `534abdc` and restaurant_catalog_svc `4eb70598` (2026-10-16), dish search gets
 `user_location` and only returns dishes from nearby restaurants with a live menu. The `users` section's
 `UserDto` carries `username` (§28), and a query matches it (`qadiner0303` finds that diner, captured
 2026-10-24).
+
+**BE drift (dish hits):** a dish hit names its place only by the wrapper's `restaurant_name`, the
+profile's `display_name`, even where that is a short handle: stage `b3e80a5e-…` is `name` "Dharan Rest
+Live Menu", `display_name` "dh" (captured 2026-10-27). A `restaurants` hit carries both, and the app
+names it by `name` (as the place page does). The wrapper's `restaurant_image` is the place's logo, and
+the Search dish card shows it when the dish has no photo. Needs BE: the place's `name` on each dish hit.
 
 ---
 
@@ -832,6 +930,7 @@ General diner sign-in on phase01 is phone number + OTP (`POST /dd/v1/authenticat
 | §19 | `/v1/blocks/unblock` | POST | JWT |
 | §20 | `/dd/v1/users/current` | GET | JWT |
 | §21 | `/v1/feed_posts/{uuid}` | DELETE | JWT, author only in the UI |
+| §21a | `/v1/feed_posts/{uuid}` | PUT | JWT, author only (checked by feed_svc) |
 | §22 | `/dd/v1/restaurant_catalog/restaurants/composer_search` | PUT | JWT |
 | §24 | `/v1/public/{users,restaurants,brands}/{id}/profile_metadata` | GET | `X-API-TOKEN` |
 | §24 | `/v1/{users,restaurants,brands}/{id}/profile_metadata` | GET | JWT |
@@ -858,7 +957,9 @@ General diner sign-in on phase01 is phone number + OTP (`POST /dd/v1/authenticat
 Restaurant search (gateway `SearchRestaurantV2`) needs `page_request` and a `user_location`
 (`{latitude, longitude}`) param; `search_text` is a name prefix match. It is geo-boxed and returns
 only Elite-member restaurants as the slim `RestaurantDtoV2` (`uuid`, `name`, `display_name`,
-`google_sub_locality`, `image`, `elite_listing_gallery`, no cuisines or city), under `response[]`.
+`google_sub_locality`, `image`, `elite_listing_gallery`, no cuisines or city), each wrapped as
+`RestaurantSearchHit {restaurant, profile_metadata}` under `response[]` (protos `de957dca`, live
+2026-11-07).
 
 Order history (`/dd/v1/users/orders/histories`) takes `page_request` and an optional
 `restaurant_ids[]` filter; order_svc answers 400 to any `page_request.size` over 10, so page through it.
@@ -889,7 +990,7 @@ A server flag for the phase 3 tour is not a gap. The tour-seen flag stays on the
 | Pay | Pay at a place / the bill after a reservation | `UnavailableBillRepository` (FE/NA); the at-table pay is the real dine-in pay |
 | Elara | Any assistant endpoint | `UnavailableElaraRepository` (FE/NA) |
 | Feed | Guest-readable single post | `GET` §8 requires a JWT |
-| Feed | Edit route. feed_svc has `UpdateFeedPost` (`4b563a4`, 2026-10-16; protos #1171), but customer_gateway exposes no route for it | Edit hidden except for the author |
+| Search | Page/cursor and a sort on unified search §25 (it asks page 0 only) | Every scope shows one §25 page (`page_size` 20); a full one ends "More: FE/NA"; Latest is FE/NA |
 | Feed | Drafts, report-post | Guests get no server drafts (2026-10-01). Signed-in server drafts come later. In-memory drafts; no report. No draft route captured |
 | Feed | Search must hide soft-deleted posts | §21 bug |
 | Create | Happening / restaurant-story sample body | No happening create sample; the stories rail is §23 |
@@ -897,7 +998,8 @@ A server flag for the phase 3 tour is not a gap. The tour-seen flag stays on the
 | Create | `cover_media_id` echo, Google-place import | Cover re-uploaded; non-partner places deferred |
 | Create | Bill-photo (OCR) visit verification; a partner flag on `ComposerRestaurantHit` | Google and non-partner picks show "Upload your bill · FE/NA"; partner = catalog hit |
 | Create | `image` on Google `ComposerRestaurantHit`s (catalog fetches the Places photo only at ensure/create time) | No image: the app doesn't call Google Places for a photo (removed 7 Oct 2026), so the hit shows the restaurant's initial until BE sends an `image` |
-| Tokens | Token store / top-up | Wallet live on §26 (2026-10-14); Amplify live on §27 (2026-10-15); no Top up |
+| Tokens | Token store / top-up (BE now has a one-time purchase, `/v1/token_purchases`, §26; not wired) | Wallet live on §26 (2026-10-14); Amplify live on §27 (2026-10-15); no Top up |
 | Feed | Seen state for §23 stories | Device-local seen post ids (newest 500) |
+| Feed | The curator's visited places on a curation post. `author.user` (`usersvc.v2.UserProfileMetadata`) has `visited_restaurants` (protos `24200cfc`), but feed_svc `93b364a` ("Keep visited restaurants off feed post authors") clears it on every post; checked live on the public feed 2026-11-04 (empty list on all 20 curation authors). Needs BE: keep it on curation authors, or a visited flag per `CurationMember` | The app compares the members with `author.user.visited_restaurants` (protos_dart `v0.34.47`); while it's empty the card reads "0 visited / n spots" and the detail hides its "n of m personally visited" tag (user decision 2026-11-04: 0, not FE/NA) |
 | Dine-in | The kitchen's accept on a paid QSR order: stage sends `ORDER_STATUS_SCHEDULED`, undocumented. `/dd/v1/users/orders/current` is empty for a paid QSR order once IN_PROGRESS | SCHEDULED or COMPLETED reads as accepted (`OrderTypeUtils`); the waiting order's id is kept on the device and read back by id |
-| Other | Push registration, city list / geocode, geo-IP | No push; a fixed city list. With no device position, the feed takes the listed city nearest the IP location from GeoJS (third-party, 2026-10-26) |
+| Other | Push registration (customer_gateway `52e65ea` registers FCM tokens through Novu on the SkipQ router only, `/skip_q/v1/users/current/push_tokens`; no Elite route), city list / geocode, geo-IP | No push; a fixed city list. With no device position, the feed takes the listed city nearest the IP location from GeoJS (third-party, 2026-10-26) |

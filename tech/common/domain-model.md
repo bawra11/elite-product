@@ -172,7 +172,7 @@ Implemented in `elite_app/lib/domain/entities/discovery.dart` and
 entity maps to a future endpoint behind `DiscoveryRepository`, so screens won't change
 when the real API lands.
 
-- `RestaurantSummary`: the diner-facing slice of a restaurant (name, area, cuisine, hero/logo, Worth It score and trend, DNA, amenities, live vibe). Lookup by id is `GET /dd/v1/public/restaurant_catalog/restaurants/{id}` (phase01 catalog), read beside the place's §24 profile metadata for the insights. Opening hours and a verified-experience count are still missing (FE/NA). Feed posts carry only `restaurant_id`.
+- `RestaurantSummary`: the diner-facing slice of a restaurant (name, area, cuisine, hero/logo, Worth It score and trend, DNA, amenities, live vibe). Lookup by id is `GET /dd/v1/public/restaurant_catalog/restaurants/{id}` (phase01 catalog), with no §24 read; the insights come from the `restaurant` profile_meta a feed post inlines (curation members, experiences), or the place profile's own §24 read. Opening hours and a verified-experience count are still missing (FE/NA). Feed posts carry only `restaurant_id`.
 - `ExperienceDna` / `DnaAxis`: restaurant only, never on an individual experience. Built from §24 `experience_dna` once BE marks it `available` (3+ eligible axes; an axis is eligible at 3+ mentions); the place shows no DNA before that. Axes SERVICE, FOOD, HYGIENE, AMBIENCE, VIBE, VALUE; only eligible ones are drawn.
 - `Curation` / `CurationSpot` / `CuratorSummary`: up to 15 spots; each spot has a note, verified-visited and promoted flags. The wire payload is confirmed (§7); these richer spot fields are still frontend-only.
 - `RestaurantStory`: restaurant-authored happening, with media, dish tags and an offer.
@@ -189,5 +189,5 @@ since 2026-10-16 (api-reference.md §28). The OTP is
 6 digits for now. That length is the current value from the OTP provider and may change,
 so clients must not hard-code it. Every build signs in through
 `DineInOtpAuthRepository`. There is no stub, test code, or refresh-token bypass. After
-OTP verification, a gated action shows Complete profile. Otherwise the tour runs. The
-tour-seen flag stays on the device.
+OTP verification, a gated action shows Complete profile, the diner's real profile from §20 (2026-11-08).
+Otherwise the sheet goes straight back; the tour is onboarding's, never sign-in's (2026-11-04).

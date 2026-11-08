@@ -21,12 +21,12 @@ flowchart TD
   add -->|Save or publish| back["Return to origin"]
   mine -->|Save or publish from an edit| mine
 
-  detail -->|Author| edit["Delete; edit once BE has an update route"]
+  detail -->|Author| edit["Delete, or Edit: curation-add, then Update curation"]
   detail -->|Anyone else| read["Read only"]
   detail --> place["place-profile of a member restaurant"]
 ```
 
-From an experience, `create-curation-pick` adds that place to an existing curation or starts one, then returns to that experience. Delete on the curation shows only for the author. Edit on a published curation waits for BE's update route; drafts stay editable in My curations, which keeps drafts and the curations published from this device across restarts.
+From an experience, `create-curation-pick` adds that place to an existing curation or starts one, then returns to that experience. Delete and Edit on the curation show only for the author. Edit opens the published curation in `curation-add`, and "Update curation" saves over the live post (api-reference §21a). It doesn't post a second copy and earns no tokens. The detail and every list then show the edit. `create-curation-pick` can also add a place to a published curation, and that change goes live at once. Drafts stay editable in My curations, which keeps drafts and the curations published from this device across restarts.
 
 "Earn more tokens" on both curation steps follows feed_svc's rule (§26): a public curation with the earn policy's minimum number of places earns the policy's curation amount, once per curation. Cover and description add nothing. The meter shows the most it can earn, because the app doesn't check the earlier-experiences condition or the monthly cap.
 

@@ -8,7 +8,7 @@ The OTP is 6 digits for now. That length is the current value from the OTP provi
 
 The gate opens only for an action tied to a person: react, follow, post, reserve, pay, and Live Vibe. Live Menu is open to guests. The gate opens as a sheet over the screen the diner was on, and tapping outside it keeps browsing. The basic user profile view is not gated, but any private information or analytics on the profile is gated behind sign-in.
 
-After OTP verification, if the guest took an action that triggered the gate, show Complete profile. Otherwise show the tour. The tour-seen flag stays on the device. A reinstall may show the tour again. No server flag. Superseded 2026-10-01: the next step was the phase 3 tour on the first verification of the account.
+After OTP verification, if the guest took an action that triggered the gate, show Complete profile. Otherwise go straight back to where the diner was, with "Complete my profile instead" as an option. The tour is onboarding's, never sign-in's (2026-11-04). Complete profile is the diner's real profile (2026-11-08): it shows their photo and details from `users/current`, Save writes them, and "Skip for now" goes on with the action. Superseded 2026-10-01: the next step was the phase 3 tour on the first verification of the account.
 
 On `auth-name`, the handle is checked against BE as it is typed (live 2026-10-24, api-reference §28). A handle that already exists shows "Already have an account? Sign in", which opens phone + OTP sign-in. The handle is claimed for the account at the first sign-in.
 
@@ -24,11 +24,9 @@ flowchart TD
   otp -->|Code accepted| verified["auth-verified"]
   verified --> gated{Action opened the gate?}
   gated -->|Yes| profile["Complete profile"]
-  gated -->|No| seen{Tour seen on this device?}
-  seen -->|No| tour["Phase 3 tour"]
-  seen -->|Yes| go
-  profile --> go
-  tour --> go
+  gated -->|No| back
+  verified -.->|Complete my profile instead| profile
+  profile -->|Save or Skip for now| go
 ```
 
 Dine-in and paid-QSR use that magic link as the forced (preferred) sign-in. Dine-in entry is a table QR or `/wl/wau:<uuid>` link. It never appears as a second button on the diner phone sheet. TODO: no paid-QSR magic-link entry path is captured, so this note does not name one.

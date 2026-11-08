@@ -69,8 +69,12 @@ still call `requireVerified` at the tap. `AuthBloc` exposes a session state (`gu
 `phase1Named` / `authenticated`) that the router redirect reads.
 
 The auth flow is a bottom sheet, never a route (2026-10-12): gate → number → code → verified →
-profile or tour all run in one `AuthSheetRoute` over the screen the diner is on, opened only
-through `showAuthGate`. There is no `/auth` route. `requireVerified` waits on a ticket the auth
+profile all run in one `AuthSheetRoute` over the screen the diner is on, opened only
+through `showAuthGate`. There is no `/auth` route. The tour is onboarding's, never the sheet's (2026-11-04).
+Complete profile is the real profile form (2026-11-08): the dine-in `UserProfilePage` over the shared
+`UserBloc`, which reads §20 `users/current`, uploads the photo and saves with `PATCH /dd/v1/users/current`.
+In the sheet, "Skip for now" replaces its back and Edit, so the pending action still resumes. Going guest
+clears `UserBloc`, so the form never shows or saves the last account. `requireVerified` waits on a ticket the auth
 flow closes, not on a pushed route's result: signing in refreshes the router, and go_router
 rebuilds a pushed route on a refresh, which orphaned the awaited push (the action never
 resumed after the gate). The tour ends on Home (2026-10-25): the shell takes a tab request, since tabs
@@ -124,7 +128,8 @@ pauses while anything covers the viewer or the diner drags between authors.
 ## Insights, Tokens and Amplify (2026-10-15)
 
 A place's Worth It score, its trend and its Experience DNA are BE's daily insights on §24
-profile metadata, read beside every catalog place read. The app draws them (score chip, trend
+profile metadata. Lists never call §24 for them (2026-11-03): feed posts inline it (`author`,
+`experience.restaurant`, each curation member's `restaurant`), and only the profile pages read it. The app draws them (score chip, trend
 card with a range menu and scrubbable chart, the DNA gem and sheet) and computes none of them.
 Elite Tokens live on user_svc (§26): `WalletCubit` reads balance, Status XP, the ledger and the
 earn policy, and every earn amount in the UI comes from that policy, through feed_svc's per-post
