@@ -153,3 +153,9 @@ is the "Still absent" table in `api-reference.md`.
   widget tests.
 - Integration tests (`integration_test` package) for the three onboarding phases end-to-end
   against a mock server, since that flow is the highest-stakes first-run experience.
+- CI (`.github/workflows/test-cycle.yaml`, 9 Nov 2026): analyze, tests and logic-layer coverage on
+  demand, and on its own each time a push takes `phase01` past a multiple of 50 commits, since
+  commits land on `phase01` directly.
+- `e2e/sandbox/sandbox.sh`: the real backend services built from their `stage` branches, run with
+  Docker on one machine and seeded with test restaurants, menus, diners and posts, for end-to-end runs
+  without stage.

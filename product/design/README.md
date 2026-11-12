@@ -38,7 +38,11 @@ Feature code never uses hex literals or ad-hoc sizes; it reads tokens.
 - **Gold is reserved** for DNA axis labels and the DNA ring, the location pill, the `LATEST` tick, the live-status dot and membership/token ornament. Eyebrows are violet.
 - **Playfair only on the scale:** 32/40, 24/32, 20/28, plus 16/20 for tiles and 900 for DNA titles.
 - **Radii:** 12 inputs, 14 note/tile, 16 cards, 20 heroes, 36 sheets and search bars, pill for actions.
-- **Recommendation is binary** (Worth it / Not Worthy), never a rating. **DNA belongs to restaurants**: it never appears on an experience.
+- **Recommendation is binary** (Worth it / Not Worthy), never a rating. Worth it is light green, Not worth it orange, with a glint
+  running round the tag's frame (user decision, 12 Nov 2026). **DNA belongs to restaurants**: it never appears on an experience.
+- **Nothing rides on a feed experience's media** but its page dots: glass chips vanish on a light photo. Verified visit is text on
+  the author line; the place strip and tags sit below.
+- **Past timestamps are age tags** (Fresh, Recent, A while back, Throwback), outlined like the Follow pill, never a date or time.
 - **No Unicode glyphs as icons.** The `◆` bullet is a 9px vector diamond (`DiamondNote`).
 - **Motion:** 120–200ms ease-out for functional motion. Press feedback is a colour/opacity change, never a scale. The only scale is the reaction "tap pop".
 

@@ -597,7 +597,8 @@ Fields:
   `worth_it_count`, `helpful_count`, `unhelpful_count`, `impression_count`; and live
   `follower_count`, `following_count` (following spans users, restaurants and brands).
 - `RestaurantProfileMetadata`: `uuid`, `display_name`, `display_image`, `logo`, `account_id`,
-  `diners_served` (protos #1184, gateway `6636eac`; the app doesn't read it yet),
+  `diners_served` (protos #1184, gateway `6636eac`, filled by restaurant_catalog_svc `4dc1deff` on
+  2026-11-05; the app doesn't read it yet),
   `franchise_id`, plus its own happenings (`happening_count`, `helpful_count`,
   `unhelpful_count`, `impression_count`), experiences that name it (`experience_about_count`,
   `experience_about_impression_count`), curations that include it (`curation_about_count`), and
@@ -828,11 +829,13 @@ Since customer_gateway `534abdc` and restaurant_catalog_svc `4eb70598` (2026-10-
 `UserDto` carries `username` (§28), and a query matches it (`qadiner0303` finds that diner, captured
 2026-10-24).
 
-**BE drift (dish hits):** a dish hit names its place only by the wrapper's `restaurant_name`, the
-profile's `display_name`, even where that is a short handle: stage `b3e80a5e-…` is `name` "Dharan Rest
-Live Menu", `display_name` "dh" (captured 2026-10-27). A `restaurants` hit carries both, and the app
-names it by `name` (as the place page does). The wrapper's `restaurant_image` is the place's logo, and
-the Search dish card shows it when the dish has no photo. Needs BE: the place's `name` on each dish hit.
+**Place names (user decision, 9 Nov 2026):** the app always shows a place by its `display_name`
+(`RestaurantDto.details.display_name`, `RestaurantDtoV2.display_name`, profile_meta `display_name`, an
+order's `restaurant_display_name`), and falls back to `name` only when it is empty (`placeName`,
+`lib/domain/entities/place_name.dart`). A dish hit's `restaurant_name` is already the `display_name`.
+Stage `b3e80a5e-…` has `display_name` "dh" (captured 2026-10-27), so it shows as "dh"; the fix for a
+short handle is on the restaurant's profile, not in the app. The wrapper's `restaurant_image` is the
+place's logo, and the Search dish card shows it when the dish has no photo.
 
 ---
 
@@ -994,7 +997,7 @@ Restaurant search (gateway `SearchRestaurantV2`) needs `page_request` and a `use
 only Elite-member restaurants as the slim `RestaurantDtoV2` (`uuid`, `name`, `display_name`,
 `google_sub_locality`, `image`, `elite_listing_gallery`, no cuisines or city), each wrapped as
 `RestaurantSearchHit {restaurant, profile_metadata}` under `response[]` (protos `de957dca`, live
-2026-11-07).
+2026-11-07). The metadata carries the viewer's `is_following` (restaurant_catalog_svc `36ff1c67`).
 
 Order history (`/dd/v1/users/orders/histories`) takes `page_request` and an optional
 `restaurant_ids[]` filter; order_svc answers 400 to any `page_request.size` over 10, so page through it.
